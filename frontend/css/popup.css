@@ -93,6 +93,8 @@ body {
 .ai-agent-section h3 {
     margin-bottom: 10px;
     font-size: 1rem;
+    display: flex;
+    align-items: center;
 }
 
 .ai-input {
@@ -431,4 +433,14 @@ body {
     padding: 20px;
     color: #666;
     font-style: italic;
+}
+
+/* Panther Logo Styling */
+.panther-logo {
+    width: 24px;
+    height: 24px;
+    margin-right: 8px;
+    vertical-align: middle;
+    border-radius: 4px;
+    object-fit: contain;
 }

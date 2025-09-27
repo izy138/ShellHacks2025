@@ -1,4 +1,5 @@
 import array
+from ast import Dict
 from ctypes import Array
 from fastapi import APIRouter, HTTPException
 from app.models import Course, CurrentCourse, Major, User, Location
@@ -83,8 +84,8 @@ async def edit_user(user_id: str, update_data: dict):
 
 
 #----------------- Route Stuff -----------------
-@router.get("/route/get_route/{place_id_list}")
-def get_route(place_id_list: list[str]):
+@router.get("/route/get_route/{place_ids}")
+def get_route(place_id_list: list[Dict]):
     return google_api.get_route(place_id_list)
 
 @router.get("/route/get_route_travel_time{class_list_string}")

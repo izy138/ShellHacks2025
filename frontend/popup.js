@@ -195,7 +195,7 @@ async function getCompletedCourses() {
     }
 }
 
-// Save completed course to Chrome storage
+// Save completed course to user data
 function saveCompletedCourse(courseCode) {
     try {
         const userData = getUserData();
