@@ -34,6 +34,9 @@ async def get_major(major_id: str):
 
 # ----------------- User -----------------
 async def insert_user(user: User):
+    existing = await db.users.find_one({"user_id": user.user_id})
+    if existing:
+        return None  # Or raise an exception if preferred
     await db.users.insert_one(user.dict())
 
 async def get_user(user_id: str):
