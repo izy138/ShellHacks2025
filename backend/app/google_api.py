@@ -39,7 +39,7 @@ def get_route(location_list):
             "https://routes.googleapis.com/directions/v2:computeRoutes",
             headers={
                 "X-Goog-Api-Key": api_key,
-                "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline"
+                "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs.polyline.encodedPolyline,routes.legs.staticDuration,routes.legs.distanceMeters"
             },
             json=request
         )
