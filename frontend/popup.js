@@ -455,8 +455,32 @@ function toggleDropdown(sectionName) {
 // Make toggleDropdown globally available
 window.toggleDropdown = toggleDropdown;
 
+// AI Agent dropdown functionality
+function toggleAIDropdown() {
+    const content = document.getElementById('ai-content');
+    const arrow = document.getElementById('ai-arrow');
+
+    const isCollapsed = content.classList.contains('collapsed');
+
+    if (isCollapsed) {
+        // Expand
+        content.classList.remove('collapsed');
+        arrow.classList.remove('rotated');
+    } else {
+        // Collapse
+        content.classList.add('collapsed');
+        arrow.classList.add('rotated');
+    }
+}
+
 // Add event listeners for dropdown headers
 document.addEventListener('DOMContentLoaded', function() {
+    // AI Agent dropdown
+    const aiHeader = document.getElementById('ai-header');
+    if (aiHeader) {
+        aiHeader.addEventListener('click', toggleAIDropdown);
+    }
+
     // Dropdown headers
     const checklistHeader = document.getElementById('checklist-header');
     const routesHeader = document.getElementById('routes-header');
