@@ -1,3 +1,43 @@
+// Fetch all majors from API
+async function fetchAllMajors() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/majors`);
+        if (!response.ok) throw new Error('Failed to fetch majors');
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching all majors:', error);
+        return [];
+    }
+}
+
+// Populate major dropdown and handle change
+async function setupMajorDropdown() {
+    const majorDropdown = document.getElementById('major-dropdown');
+    if (!majorDropdown) return;
+    const majors = await fetchAllMajors();
+    console.log('Fetched majors:', majors);
+    majorDropdown.innerHTML = '<option value="">Select your major...</option>';
+    majors.forEach(major => {
+        const option = document.createElement('option');
+        option.value = major.major_id;
+        option.textContent = major.name;
+        majorDropdown.appendChild(option);
+    });
+    // Set current major if available
+    const userData = await getUserData();
+    if (userData.major) {
+        majorDropdown.value = userData.major;
+    }
+    majorDropdown.addEventListener('change', async function () {
+        const selectedMajor = this.value;
+        if (selectedMajor) {
+            const userData = await getUserData();
+            userData.major = selectedMajor;
+            await saveUserData(userData);
+            location.reload(); // reload to update checklist
+        }
+    });
+}
 // popup.js - Chrome Extension Popup Logic
 
 // API Configuration
@@ -222,30 +262,21 @@ function toggleDropdown(sectionName) {
 }
 
 // API Functions
-async function fetchMajorCourses(majorId = 'COMPSC:BS') {
-    console.log('fetchMajorCourses called with majorId:', majorId);
-    console.log('API_BASE_URL:', API_BASE_URL);
+async function fetchMajorCourses(majorId) {
+    if (!majorId) {
+        console.warn('No majorId provided to fetchMajorCourses');
+        return null;
+    }
     const url = `${API_BASE_URL}/majors/${majorId}`;
-    console.log('Fetching from URL:', url);
-    
     try {
-        console.log('Making fetch request...');
         const response = await fetch(url);
-        console.log('Response received:', response);
-        console.log('Response status:', response.status);
-        console.log('Response ok:', response.ok);
-        
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
-        console.log('Parsing JSON response...');
         const majorData = await response.json();
-        console.log('Major data parsed:', majorData);
         return majorData;
     } catch (error) {
         console.error('Error fetching major courses:', error);
-        console.error('Error details:', error.message);
         showNotification('Failed to load course data from API');
         return null;
     }
@@ -307,8 +338,9 @@ async function loadCoursesFromAPI() {
     let majorData;
     let userData;
     try {
-        majorData = await fetchMajorCourses();
         userData = await getUserData();
+        const selectedMajorId = userData.major || '';
+        majorData = await fetchMajorCourses(selectedMajorId);
         console.log('Major data received:', majorData);
         if (!majorData) {
             console.log('No major data, showing fallback courses');
@@ -404,24 +436,25 @@ async function loadCoursesFromAPI() {
 
 // Show fallback courses if API fails
 function showFallbackCourses(courseGrid) {
-    console.log('Showing fallback courses');
-    const fallbackCourses = [
-        { code: 'COP 2210', name: 'Programming I', credits: 3 },
-        { code: 'COP 3337', name: 'Programming II', credits: 3 },
-        { code: 'COP 3530', name: 'Data Structures', credits: 3 },
-        { code: 'MAC 2311', name: 'Calculus I', credits: 4 },
-        { code: 'MAC 2312', name: 'Calculus II', credits: 4 },
-        { code: 'STA 3033', name: 'Probability & Statistics', credits: 3 }
-    ];
-    
-    courseGrid.innerHTML = '';
-    fallbackCourses.forEach(course => {
-        const courseItem = createCourseItem(course.code, course, false);
-        courseGrid.appendChild(courseItem);
-    });
-    
-    addCheckboxEventListeners();
-    updateProgress();
+    console.log('No pending classes for user.');
+        courseGrid.innerHTML = `
+            <div style="
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                height: 100%;
+                font-size: 1.2em;
+                color: #666;
+                background: rgba(255,255,255,0.8);
+            ">
+                You don't have any pending classes
+            </div>
+        `;
+        courseGrid.style.display = 'flex';
+        courseGrid.style.alignItems = 'center';
+        courseGrid.style.justifyContent = 'center';
+        courseGrid.style.height = '300px';
 }
 
 // Create a course item element
@@ -589,6 +622,7 @@ function toggleAIDropdown() {
 
 // Add event listeners for dropdown headers
 document.addEventListener('DOMContentLoaded', function() {
+    setupMajorDropdown();
     // AI Agent dropdown
     const aiHeader = document.getElementById('ai-header');
     if (aiHeader) {

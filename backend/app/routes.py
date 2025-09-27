@@ -55,6 +55,15 @@ async def create_major(major: Major):
     await insert_major(major)
     return {"status": "success"}
 
+# GET all majors for dropdown
+from app.db import db
+
+@router.get("/majors")
+async def list_majors():
+    majors = await db.majors.find().to_list(length=100)
+    # Only return major_id and name for dropdown
+    return [{"major_id": m.get("major_id"), "name": m.get("name")} for m in majors]
+
 @router.get("/majors/{major_id}")
 async def read_major(major_id: str):
     major = await get_major(major_id)
