@@ -97,6 +97,17 @@
             padding: 15px;
             border-radius: 12px;
             margin-bottom: 20px;
+            height: 180px;
+            min-height: 180px;
+            max-height: 180px;
+            width: 100%;
+            min-width: 400px;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            flex-shrink: 0;
+            box-sizing: border-box;
         }
 
         .ai-agent-section h3 {
@@ -109,8 +120,12 @@
             padding: 8px 12px;
             border: none;
             border-radius: 6px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-size: 13px;
+            height: 32px;
+            min-height: 32px;
+            max-height: 32px;
+            flex-shrink: 0;
         }
 
         .ai-button {
@@ -123,6 +138,11 @@
             font-size: 12px;
             transition: all 0.3s ease;
             width: 100%;
+            margin-bottom: 4px;
+            height: 32px;
+            min-height: 32px;
+            max-height: 32px;
+            flex-shrink: 0;
         }
 
         .ai-button:hover {
@@ -132,16 +152,23 @@
         .prompt-templates {
             display: flex;
             gap: 10px;
-            margin: 10px 0 12px;
-            flex-wrap: wrap;
-            /* wraps nicely on small screens */
+            margin: 8px 0 8px;
+            flex-wrap: nowrap;
+            /* prevents wrapping that could cause movement */
+            height: 40px;
+            min-height: 40px;
+            max-height: 40px;
+            width: 100%;
+            flex-shrink: 0;
+            box-sizing: border-box;
         }
 
         .prompt-btn {
-            flex: 1 1 48%;
-            /* two per row */
+            width: 180px;
+            height: 40px;
             min-width: 180px;
-            padding: 10px 12px;
+            max-width: 180px;
+            padding: 8px 10px;
             border-radius: 10px;
             border: 1px solid rgba(255, 255, 255, .6);
             background: rgba(255, 255, 255, .25);
@@ -149,6 +176,9 @@
             /* matches your purple bg */
             font-weight: 600;
             cursor: pointer;
+            flex-shrink: 0;
+            box-sizing: border-box;
+            font-size: 0.85rem;
         }
 
         .prompt-btn:hover {
@@ -238,8 +268,8 @@
         .course-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 6px;
-            margin-bottom: 15px;
+            gap: 5px;
+            margin-bottom: 5px;
             max-height: 300px;
             overflow-y: auto;
         }
@@ -265,13 +295,13 @@
         .course-checkbox-item {
             display: flex;
             align-items: center;
-            padding: 8px 10px;
+            padding: 6px 6px;
             background: #f8f9fa;
             border: 1px solid #e0e0e0;
             border-radius: 6px;
             font-size: 12px;
             transition: all 0.3s ease;
-            min-height: 40px;
+            max-height: 68px;
         }
 
         .course-checkbox-item:hover {
@@ -553,8 +583,8 @@
                 <div class="dropdown-content" id="checklist-content">
                     <div class="dropdown-inner">
                         <div class="search-filters">
-                            <!-- <input type="text" class="filter-input" placeholder="Search courses..."> -->
-                            <input type="text" class="filter-input" placeholder="Filter semester...">
+                            <input type="text" class="filter-input" placeholder="Search courses...">
+                            <!-- <input type="text" class="filter-input" placeholder="Filter semester..."> -->
                         </div>
 
                         <div class="course-grid" id="course-grid">
