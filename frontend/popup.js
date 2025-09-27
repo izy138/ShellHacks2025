@@ -3,6 +3,141 @@
 // API Configuration
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
+// Google Maps and Polyline functionality
+let map;
+let polylines = [];
+
+function initMap() {
+    // FIU coordinates
+    const fiuLocation = { lat: 25.7565, lng: -80.3760 };
+    
+    map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 16,
+        center: fiuLocation,
+        mapTypeId: 'roadmap'
+    });
+    
+    // Add FIU marker
+    new google.maps.Marker({
+        position: fiuLocation,
+        map: map,
+        title: 'Florida International University'
+    });
+    
+    // Add encoded polyline route
+    addEncodedPolyline();
+}
+
+function addEncodedPolyline() {
+    // Encoded polyline for FIU campus route
+    const encodedPolyline = "icg|CdlpiNbAEV?pBGZI|HYDbB@lEDT@n@|@EAYdA??HbACvA?J??@jB@AIZ?B^?z@C@L?Kr@A\\ZFVL@B|@C@JNH?lAZRFNJD@h@HDBH@LFHN@A?PTvDBF]DEd@Ce@BEDG\\@l@a@@g@\\K^Ur@@ZBTWTCXB\\LTFBVfA?rBl@B";
+    
+    try {
+        // Decode the polyline
+        const path = google.maps.geometry.encoding.decodePath(encodedPolyline);
+        
+        // Create polyline with different colors for segments
+        const polyline = new google.maps.Polyline({
+            path: path,
+            geodesic: true,
+            strokeColor: '#FF0000',
+            strokeOpacity: 1.0,
+            strokeWeight: 3
+        });
+        
+        polyline.setMap(map);
+        polylines.push(polyline);
+        
+        console.log('Added encoded polyline route to map');
+        
+        // Fit map to show the entire route
+        const bounds = new google.maps.LatLngBounds();
+        path.forEach(point => bounds.extend(point));
+        map.fitBounds(bounds);
+        
+    } catch (error) {
+        console.error('Error adding polyline:', error);
+    }
+}
+
+function addMultiplePolylines(polylineData) {
+    // Clear existing polylines
+    polylines.forEach(polyline => polyline.setMap(null));
+    polylines = [];
+    
+    const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF'];
+    
+    polylineData.forEach((data, index) => {
+        try {
+            const path = google.maps.geometry.encoding.decodePath(data.encodedPolyline);
+            const color = colors[index % colors.length];
+            
+            const polyline = new google.maps.Polyline({
+                path: path,
+                geodesic: true,
+                strokeColor: color,
+                strokeOpacity: 1.0,
+                strokeWeight: 3
+            });
+            
+            polyline.setMap(map);
+            polylines.push(polyline);
+            
+        } catch (error) {
+            console.error(`Error adding polyline ${index}:`, error);
+        }
+    });
+}
+
+// Example function to add multiple route segments
+function addRouteSegments() {
+    const routeData = [
+        {
+            encodedPolyline: "icg|CdlpiNbAEV?pBGZI|HYDbB@lEDT@n@|@EAYdA??HbACvA?J??@jB@AIZ?B^?z@C@L?Kr@A\\ZFVL@B|@C@JNH?lAZRFNJD@h@HDBH@LFHN@A?PTvDBF]DEd@Ce@BEDG\\@l@a@@g@\\K^Ur@@ZBTWTCXB\\LTFBVfA?rBl@B",
+            name: "Main Campus Route"
+        },
+        {
+            encodedPolyline: "icg|CdlpiNbAEV?pBGZI|HYDbB@lEDT@n@|@EAYdA??HbACvA?J??@jB@AIZ?B^?z@C@L?Kr@A\\ZFVL@B|@C@JNH?lAZRFNJD@h@HDBH@LFHN@A?PTvDBF]DEd@Ce@BEDG\\@l@a@@g@\\K^Ur@@ZBTWTCXB\\LTFBVfA?rBl@B",
+            name: "Alternative Route"
+        }
+    ];
+    
+    addMultiplePolylines(routeData);
+    console.log('Added multiple route segments with different colors');
+}
+
+// User ID Management
+function generateUserId() {
+    return 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+}
+
+function getUserId() {
+    let userId = localStorage.getItem('fiu_degree_tracker_user_id');
+    if (!userId) {
+        userId = generateUserId();
+        localStorage.setItem('fiu_degree_tracker_user_id', userId);
+        console.log('Generated new user ID:', userId);
+    }
+    return userId;
+}
+
+function getUserData() {
+    const userId = getUserId();
+    const userData = localStorage.getItem(`fiu_degree_tracker_data_${userId}`);
+    return userData ? JSON.parse(userData) : {
+        completedCourses: [],
+        major: 'COMPSC:BS',
+        schedule: {},
+        preferences: {}
+    };
+}
+
+function saveUserData(data) {
+    const userId = getUserId();
+    localStorage.setItem(`fiu_degree_tracker_data_${userId}`, JSON.stringify(data));
+    console.log('Saved user data for:', userId);
+}
+
 // Tab switching functionality
 function switchTab(tabName) {
     // Hide all tab contents
@@ -77,16 +212,23 @@ async function fetchMajorCourses(majorId = 'COMPSC:BS') {
 
 async function fetchCourseDetails(courseCode) {
     console.log('fetchCourseDetails called for:', courseCode);
-    const url = `${API_BASE_URL}/courses/${courseCode}`;
+    
+    // Convert course code to proper format (add space if missing)
+    let formattedCode = courseCode;
+    if (!courseCode.includes(' ')) {
+        formattedCode = courseCode.replace(/([A-Z]+)(\d+)/, '$1 $2');
+    }
+    
+    const url = `${API_BASE_URL}/courses/${encodeURIComponent(formattedCode)}`;
     console.log('Fetching course from URL:', url);
     
     try {
         const response = await fetch(url);
-        console.log('Course response for', courseCode, ':', response.status);
+        console.log('Course response for', formattedCode, ':', response.status);
         
         if (!response.ok) {
             if (response.status === 404) {
-                console.log('Course not found, returning basic info for:', courseCode);
+                console.log('Course not found, returning basic info for:', formattedCode);
                 // Course not found, return basic info
                 return {
                     code: formattedCode,
@@ -99,7 +241,7 @@ async function fetchCourseDetails(courseCode) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const courseData = await response.json();
-        console.log('Course data for', courseCode, ':', courseData);
+        console.log('Course data for', formattedCode, ':', courseData);
         return courseData;
     } catch (error) {
         console.error(`Error fetching course ${formattedCode}:`, error);
@@ -245,17 +387,13 @@ function addCheckboxEventListeners() {
 
 // Get completed courses from storage
 async function getCompletedCourses() {
-    return new Promise((resolve) => {
-        if (chrome && chrome.storage && chrome.storage.sync) {
-            chrome.storage.sync.get(['completedCourses'], function (result) {
-                resolve(result.completedCourses || []);
-            });
-        } else {
-            // Fallback to localStorage if Chrome storage is not available
-            const completed = JSON.parse(localStorage.getItem('completedCourses') || '[]');
-            resolve(completed);
-        }
-    });
+    try {
+        const userData = getUserData();
+        return userData.completedCourses || [];
+    } catch (error) {
+        console.error('Error getting completed courses:', error);
+        return [];
+    }
 }
 
 // Toggle dropdown functionality
@@ -282,6 +420,45 @@ function toggleDropdown(sectionName) {
 // Make toggleDropdown globally available
 window.toggleDropdown = toggleDropdown;
 
+// Add event listeners for dropdown headers
+document.addEventListener('DOMContentLoaded', function() {
+    // Dropdown headers
+    const checklistHeader = document.getElementById('checklist-header');
+    const routesHeader = document.getElementById('routes-header');
+    const scheduleHeader = document.getElementById('schedule-header');
+    const trackingHeader = document.getElementById('tracking-header');
+    
+    if (checklistHeader) {
+        checklistHeader.addEventListener('click', () => toggleDropdown('checklist'));
+    }
+    if (routesHeader) {
+        routesHeader.addEventListener('click', () => toggleDropdown('routes'));
+    }
+    if (scheduleHeader) {
+        scheduleHeader.addEventListener('click', () => toggleDropdown('schedule'));
+    }
+    if (trackingHeader) {
+        trackingHeader.addEventListener('click', () => toggleDropdown('tracking'));
+    }
+    
+    // Prompt template buttons
+    const nextCoursesBtn = document.getElementById('next-courses-btn');
+    const courseRequirementsBtn = document.getElementById('course-requirements-btn');
+    const aiInput = document.querySelector('.ai-input');
+    
+    if (nextCoursesBtn && aiInput) {
+        nextCoursesBtn.addEventListener('click', () => {
+            aiInput.value = "Given the courses I've completed, what courses should I take next to stay on track for graduation?";
+        });
+    }
+    
+    if (courseRequirementsBtn && aiInput) {
+        courseRequirementsBtn.addEventListener('click', () => {
+            aiInput.value = "What are the requirements for this course? Include prerequisites and corequisites.";
+        });
+    }
+});
+
 // Update progress function
 function updateProgress() {
     const total = document.querySelectorAll('.course-checkbox-item').length;
@@ -295,6 +472,32 @@ function updateProgress() {
 // Course completion functionality
 document.addEventListener('DOMContentLoaded', function () {
     console.log('DOM loaded, starting course loading...');
+    
+    // Initialize user data
+    const userId = getUserId();
+    const userData = getUserData();
+    console.log('User ID:', userId);
+    console.log('User data:', userData);
+    
+    // Set major dropdown to user's saved major
+    const majorDropdown = document.getElementById('major-dropdown');
+    if (majorDropdown && userData.major) {
+        majorDropdown.value = userData.major;
+    }
+    
+    // Add event listener for major dropdown changes
+    if (majorDropdown) {
+        majorDropdown.addEventListener('change', function() {
+            const selectedMajor = this.value;
+            const userData = getUserData();
+            userData.major = selectedMajor;
+            saveUserData(userData);
+            console.log('Saved major selection:', selectedMajor);
+            
+            // Reload courses for the new major
+            loadCoursesFromAPI();
+        });
+    }
     
     // Test API connection first
     console.log('Testing API connection...');
@@ -335,27 +538,20 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
-});
-
-// Save completed course to Chrome storage
-function saveCompletedCourse(courseCode) {
-    if (chrome && chrome.storage && chrome.storage.sync) {
-        chrome.storage.sync.get(['completedCourses'], function (result) {
-            const completed = result.completedCourses || [];
-            if (!completed.includes(courseCode)) {
-                completed.push(courseCode);
-                chrome.storage.sync.set({ completedCourses: completed });
-            }
+    
+    // Initialize Google Maps when routes dropdown is opened
+    const routesHeader = document.getElementById('routes-header');
+    if (routesHeader) {
+        routesHeader.addEventListener('click', function() {
+            // Small delay to ensure the dropdown content is visible
+            setTimeout(() => {
+                if (document.getElementById('map') && !map) {
+                    initMap();
+                }
+            }, 100);
         });
-    } else {
-        // Fallback to localStorage
-        const completed = JSON.parse(localStorage.getItem('completedCourses') || '[]');
-        if (!completed.includes(courseCode)) {
-            completed.push(courseCode);
-            localStorage.setItem('completedCourses', JSON.stringify(completed));
-        }
     }
-}
+});
 
 // Save completed course to user data
 function saveCompletedCourse(courseCode) {
@@ -389,8 +585,8 @@ function removeCompletedCourse(courseCode) {
 // Load progress from Chrome storage
 function loadProgress() {
     if (chrome && chrome.storage && chrome.storage.sync) {
-        chrome.storage.sync.get(['completedCourses'], function (result) {
-            const completed = result.completedCourses || [];
+    chrome.storage.sync.get(['completedCourses'], function (result) {
+        const completed = result.completedCourses || [];
             updateCourseCheckboxes(completed);
         });
     } else {
@@ -406,13 +602,13 @@ function updateCourseCheckboxes(completed) {
         const item = checkbox.closest('.course-checkbox-item');
         const courseCode = item.querySelector('span').textContent.split('\n')[0].trim();
 
-        if (completed.includes(courseCode)) {
-            checkbox.checked = true;
+            if (completed.includes(courseCode)) {
+                checkbox.checked = true;
             item.classList.add('completed');
-        }
-    });
+            }
+        });
 
-    updateProgress();
+        updateProgress();
 }
 
 // Update progress display
@@ -459,7 +655,7 @@ function processSyncedData(courses) {
     const courseCodes = completedCourses.map(course => course.code);
 
     if (chrome && chrome.storage && chrome.storage.sync) {
-        chrome.storage.sync.set({ completedCourses: courseCodes }, function () {
+    chrome.storage.sync.set({ completedCourses: courseCodes }, function () {
             loadProgress(); // Reload UI
             showNotification('Data synced successfully!');
         });
@@ -499,19 +695,19 @@ function showNotification(message) {
 
 // Check if user is on FIU website and show relevant features
 if (chrome && chrome.tabs && chrome.tabs.query) {
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        if (tabs[0] && tabs[0].url && tabs[0].url.includes('fiu.edu')) {
-            // User is on FIU site - show enhanced features
-            document.body.classList.add('on-fiu-site');
-        }
-    });
+chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    if (tabs[0] && tabs[0].url && tabs[0].url.includes('fiu.edu')) {
+        // User is on FIU site - show enhanced features
+        document.body.classList.add('on-fiu-site');
+    }
+});
 }
 
 // Handle messages from content script
 if (chrome && chrome.runtime && chrome.runtime.onMessage) {
-    chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-        if (request.action === 'courseDataFound') {
-            processSyncedData(request.data);
-        }
-    });
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+    if (request.action === 'courseDataFound') {
+        processSyncedData(request.data);
+    }
+});
 }

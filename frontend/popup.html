@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FIU Degree Tracker</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDaK8v3R7sOR-yXymcDVsgQVX2-U8pgJR0&libraries=geometry"></script>
     <style>
         * {
             margin: 0;
@@ -96,6 +97,17 @@
             padding: 15px;
             border-radius: 12px;
             margin-bottom: 20px;
+            height: 180px;
+            min-height: 180px;
+            max-height: 180px;
+            width: 100%;
+            min-width: 400px;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            flex-shrink: 0;
+            box-sizing: border-box;
         }
 
         .ai-agent-section h3 {
@@ -108,8 +120,12 @@
             padding: 8px 12px;
             border: none;
             border-radius: 6px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-size: 13px;
+            height: 32px;
+            min-height: 32px;
+            max-height: 32px;
+            flex-shrink: 0;
         }
 
         .ai-button {
@@ -122,6 +138,10 @@
             font-size: 12px;
             transition: all 0.3s ease;
             width: 100%;
+            height: 32px;
+            min-height: 32px;
+            max-height: 32px;
+            flex-shrink: 0;
         }
 
         .ai-button:hover {
@@ -131,16 +151,23 @@
         .prompt-templates {
             display: flex;
             gap: 10px;
-            margin: 10px 0 12px;
-            flex-wrap: wrap;
-            /* wraps nicely on small screens */
+            margin: 8px 0 8px;
+            flex-wrap: nowrap;
+            /* prevents wrapping that could cause movement */
+            height: 40px;
+            min-height: 40px;
+            max-height: 40px;
+            width: 100%;
+            flex-shrink: 0;
+            box-sizing: border-box;
         }
 
         .prompt-btn {
-            flex: 1 1 48%;
-            /* two per row */
+            width: 180px;
+            height: 40px;
             min-width: 180px;
-            padding: 10px 12px;
+            max-width: 180px;
+            padding: 8px 10px;
             border-radius: 10px;
             border: 1px solid rgba(255, 255, 255, .6);
             background: rgba(255, 255, 255, .25);
@@ -148,6 +175,9 @@
             /* matches your purple bg */
             font-weight: 600;
             cursor: pointer;
+            flex-shrink: 0;
+            box-sizing: border-box;
+            font-size: 0.85rem;
         }
 
         .prompt-btn:hover {
@@ -237,8 +267,8 @@
         .course-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 6px;
-            margin-bottom: 15px;
+            gap: 5px;
+            margin-bottom: 5px;
             max-height: 300px;
             overflow-y: auto;
         }
@@ -264,13 +294,13 @@
         .course-checkbox-item {
             display: flex;
             align-items: center;
-            padding: 8px 10px;
+            padding: 6px 6px;
             background: #f8f9fa;
             border: 1px solid #e0e0e0;
             border-radius: 6px;
             font-size: 12px;
             transition: all 0.3s ease;
-            min-height: 40px;
+            max-height: 68px;
         }
 
         .course-checkbox-item:hover {
@@ -440,6 +470,63 @@
             color: #666;
             font-style: italic;
         }
+
+        /* Schedule Calendar Styles */
+        .schedule-calendar {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .day-column {
+            text-align: center;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: #f8f9fa;
+        }
+
+        .day-header {
+            background: #667eea;
+            color: white;
+            padding: 8px 4px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .day-content {
+            padding: 8px 4px;
+            min-height: 80px;
+        }
+
+        .schedule-item {
+            margin-bottom: 4px;
+            padding: 4px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+
+        .schedule-item.class {
+            background: #e8f4f8;
+            color: #2c3e50;
+            border: 1px solid #3498db;
+        }
+
+        .schedule-item.free {
+            background: #f0f0f0;
+            color: #7f8c8d;
+            font-style: italic;
+        }
     </style>
 </head>
 
@@ -447,7 +534,7 @@
     <div class="container">
         <div class="header">
             <h1>🎓 FIU Degree Tracker</h1>
-            <p>Major Progress</p>
+            <p>Computer Science Progress</p>
         </div>
 
         <div class="content">
