@@ -1,5 +1,8 @@
 // popup.js - Chrome Extension Popup Logic
 
+// API Configuration
+const API_BASE_URL = 'http://127.0.0.1:8000/api';
+
 // Tab switching functionality
 function switchTab(tabName) {
     // Hide all tab contents
@@ -42,23 +45,145 @@ function toggleDropdown(sectionName) {
     }
 }
 
-// Course completion functionality
-document.addEventListener('DOMContentLoaded', function () {
-    // Load saved progress from Chrome storage
-    loadProgress();
+// API Functions
+async function fetchMajorCourses(majorId = 'COMPSC:BS') {
+    try {
+        const response = await fetch(`${API_BASE_URL}/majors/${majorId}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const majorData = await response.json();
+        return majorData;
+    } catch (error) {
+        console.error('Error fetching major courses:', error);
+        showNotification('Failed to load course data from API');
+        return null;
+    }
+}
 
-    // Add event listeners to checkboxes
+async function fetchCourseDetails(courseCode) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/courses/${courseCode}`);
+        if (!response.ok) {
+            if (response.status === 404) {
+                // Course not found, return basic info
+                return {
+                    code: courseCode,
+                    name: courseCode,
+                    credits: 3,
+                    prereqs: [],
+                    coreqs: []
+                };
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const courseData = await response.json();
+        return courseData;
+    } catch (error) {
+        console.error(`Error fetching course ${courseCode}:`, error);
+        // Return basic course info as fallback
+        return {
+            code: courseCode,
+            name: courseCode,
+            credits: 3,
+            prereqs: [],
+            coreqs: []
+        };
+    }
+}
+
+// Load courses from API and populate checklist
+async function loadCoursesFromAPI() {
+    const courseGrid = document.querySelector('.course-grid');
+    if (!courseGrid) return;
+
+    // Show loading indicator
+    courseGrid.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">Loading courses from API...</div>';
+
+    const majorData = await fetchMajorCourses();
+    if (!majorData) {
+        courseGrid.innerHTML = '<div style="text-align: center; padding: 20px; color: #e74c3c;">Failed to load courses. Please check if the backend API is running.</div>';
+        return;
+    }
+
+    // Clear loading indicator
+    courseGrid.innerHTML = '';
+
+    // Load completed courses from storage
+    const completedCourses = await getCompletedCourses();
+
+    // Create course items from API data
+    if (majorData.required_courses && Array.isArray(majorData.required_courses)) {
+        for (const courseCode of majorData.required_courses) {
+            const courseDetails = await fetchCourseDetails(courseCode);
+            const isCompleted = completedCourses.includes(courseCode);
+            
+            const courseItem = createCourseItem(courseCode, courseDetails, isCompleted);
+            courseGrid.appendChild(courseItem);
+        }
+    } else {
+        courseGrid.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">No courses found for this major.</div>';
+    }
+
+    // Add event listeners to new checkboxes
+    addCheckboxEventListeners();
+    updateProgress();
+}
+
+// Create a course item element
+function createCourseItem(courseCode, courseDetails, isCompleted = false) {
+    const courseItem = document.createElement('div');
+    courseItem.className = `course-checkbox-item ${isCompleted ? 'completed' : ''}`;
+    
+    const courseName = courseDetails ? courseDetails.name : courseCode;
+    const courseCredits = courseDetails ? courseDetails.credits : 3;
+    
+    courseItem.innerHTML = `
+        <input type="checkbox" ${isCompleted ? 'checked' : ''} data-course-code="${courseCode}">
+        <span>${courseCode}<br><small>${courseName} (${courseCredits} credits)</small></span>
+    `;
+    
+    return courseItem;
+}
+
+// Add event listeners to all checkboxes
+function addCheckboxEventListeners() {
     document.querySelectorAll('.course-checkbox-item input').forEach(checkbox => {
         checkbox.addEventListener('change', function () {
             const item = this.closest('.course-checkbox-item');
+            const courseCode = this.getAttribute('data-course-code');
+            
             if (this.checked) {
                 item.classList.add('completed');
+                saveCompletedCourse(courseCode);
             } else {
                 item.classList.remove('completed');
+                removeCompletedCourse(courseCode);
             }
             updateProgress();
         });
     });
+}
+
+// Get completed courses from storage
+async function getCompletedCourses() {
+    return new Promise((resolve) => {
+        if (chrome && chrome.storage && chrome.storage.sync) {
+            chrome.storage.sync.get(['completedCourses'], function (result) {
+                resolve(result.completedCourses || []);
+            });
+        } else {
+            // Fallback to localStorage if Chrome storage is not available
+            const completed = JSON.parse(localStorage.getItem('completedCourses') || '[]');
+            resolve(completed);
+        }
+    });
+}
+
+// Course completion functionality
+document.addEventListener('DOMContentLoaded', function () {
+    // Load courses from API
+    loadCoursesFromAPI();
 
     // AI Agent functionality
     const aiButton = document.querySelector('.ai-button');
@@ -85,44 +210,73 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Save completed course to Chrome storage
 function saveCompletedCourse(courseCode) {
-    chrome.storage.sync.get(['completedCourses'], function (result) {
-        const completed = result.completedCourses || [];
+    if (chrome && chrome.storage && chrome.storage.sync) {
+        chrome.storage.sync.get(['completedCourses'], function (result) {
+            const completed = result.completedCourses || [];
+            if (!completed.includes(courseCode)) {
+                completed.push(courseCode);
+                chrome.storage.sync.set({ completedCourses: completed });
+            }
+        });
+    } else {
+        // Fallback to localStorage
+        const completed = JSON.parse(localStorage.getItem('completedCourses') || '[]');
         if (!completed.includes(courseCode)) {
             completed.push(courseCode);
-            chrome.storage.sync.set({ completedCourses: completed });
+            localStorage.setItem('completedCourses', JSON.stringify(completed));
         }
-    });
+    }
 }
 
 // Remove completed course from Chrome storage
 function removeCompletedCourse(courseCode) {
-    chrome.storage.sync.get(['completedCourses'], function (result) {
-        const completed = result.completedCourses || [];
+    if (chrome && chrome.storage && chrome.storage.sync) {
+        chrome.storage.sync.get(['completedCourses'], function (result) {
+            const completed = result.completedCourses || [];
+            const index = completed.indexOf(courseCode);
+            if (index > -1) {
+                completed.splice(index, 1);
+                chrome.storage.sync.set({ completedCourses: completed });
+            }
+        });
+    } else {
+        // Fallback to localStorage
+        const completed = JSON.parse(localStorage.getItem('completedCourses') || '[]');
         const index = completed.indexOf(courseCode);
         if (index > -1) {
             completed.splice(index, 1);
-            chrome.storage.sync.set({ completedCourses: completed });
+            localStorage.setItem('completedCourses', JSON.stringify(completed));
         }
-    });
+    }
 }
 
 // Load progress from Chrome storage
 function loadProgress() {
-    chrome.storage.sync.get(['completedCourses'], function (result) {
-        const completed = result.completedCourses || [];
-
-        document.querySelectorAll('.course-checkbox-item input').forEach(checkbox => {
-            const item = checkbox.closest('.course-checkbox-item');
-            const courseCode = item.querySelector('span').textContent.split('\n')[0].trim();
-
-            if (completed.includes(courseCode)) {
-                checkbox.checked = true;
-                item.classList.add('completed');
-            }
+    if (chrome && chrome.storage && chrome.storage.sync) {
+        chrome.storage.sync.get(['completedCourses'], function (result) {
+            const completed = result.completedCourses || [];
+            updateCourseCheckboxes(completed);
         });
+    } else {
+        // Fallback to localStorage
+        const completed = JSON.parse(localStorage.getItem('completedCourses') || '[]');
+        updateCourseCheckboxes(completed);
+    }
+}
 
-        updateProgress();
+// Update course checkboxes based on completed courses
+function updateCourseCheckboxes(completed) {
+    document.querySelectorAll('.course-checkbox-item input').forEach(checkbox => {
+        const item = checkbox.closest('.course-checkbox-item');
+        const courseCode = item.querySelector('span').textContent.split('\n')[0].trim();
+
+        if (completed.includes(courseCode)) {
+            checkbox.checked = true;
+            item.classList.add('completed');
+        }
     });
+
+    updateProgress();
 }
 
 // Update progress display
@@ -168,21 +322,20 @@ function processSyncedData(courses) {
     const completedCourses = courses.filter(course => course.status === 'Enrolled' || course.grade);
     const courseCodes = completedCourses.map(course => course.code);
 
-    chrome.storage.sync.set({ completedCourses: courseCodes }, function () {
+    if (chrome && chrome.storage && chrome.storage.sync) {
+        chrome.storage.sync.set({ completedCourses: courseCodes }, function () {
+            loadProgress(); // Reload UI
+            showNotification('Data synced successfully!');
+        });
+    } else {
+        // Fallback to localStorage
+        localStorage.setItem('completedCourses', JSON.stringify(courseCodes));
         loadProgress(); // Reload UI
         showNotification('Data synced successfully!');
-    });
+    }
 }
 
-// Open Google Maps for route planning
-function openMaps() {
-    const fiuCoordinates = '25.7617,-80.3756'; // FIU main campus
-    const mapsUrl = `https://www.google.com/maps/dir/${fiuCoordinates}/Academic+Health+Center,+Florida+International+University,+Miami,+FL`;
-
-    chrome.tabs.create({
-        url: mapsUrl
-    });
-}
+// Note: openMaps function removed - now using embedded Google Maps iframe
 
 // Show notification
 function showNotification(message) {
@@ -209,16 +362,20 @@ function showNotification(message) {
 }
 
 // Check if user is on FIU website and show relevant features
-chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-    if (tabs[0] && tabs[0].url && tabs[0].url.includes('fiu.edu')) {
-        // User is on FIU site - show enhanced features
-        document.body.classList.add('on-fiu-site');
-    }
-});
+if (chrome && chrome.tabs && chrome.tabs.query) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        if (tabs[0] && tabs[0].url && tabs[0].url.includes('fiu.edu')) {
+            // User is on FIU site - show enhanced features
+            document.body.classList.add('on-fiu-site');
+        }
+    });
+}
 
 // Handle messages from content script
-chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-    if (request.action === 'courseDataFound') {
-        processSyncedData(request.data);
-    }
-});
+if (chrome && chrome.runtime && chrome.runtime.onMessage) {
+    chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+        if (request.action === 'courseDataFound') {
+            processSyncedData(request.data);
+        }
+    });
+}
