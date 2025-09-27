@@ -1,3 +1,5 @@
+import array
+from ctypes import Array
 from fastapi import APIRouter, HTTPException
 from app.models import Course, CurrentCourse, Major, User, Building
 from app.services.mongo_services import (
@@ -81,10 +83,9 @@ async def edit_user(user_id: str, update_data: dict):
 
 
 #----------------- Route Stuff -----------------
-@router.get("/route/get_route/{class_id_list}")
-def get_route(class_list_string: str):
-    class_list = class_list_string.split(',')
-    return google_api.get_route(class_list)
+@router.get("/route/get_route/{place_id_list}")
+def get_route(place_id_list: list[str]):
+    return google_api.get_route(place_id_list)
 
 @router.get("/route/get_route_travel_time{class_list_string}")
 def get_route_times(class_list_string: str):
