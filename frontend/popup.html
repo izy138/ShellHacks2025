@@ -117,6 +117,25 @@
             background: rgba(255, 255, 255, 0.3);
         }
 
+        .prompt-templates {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0 12px;
+            flex-wrap: wrap;             /* wraps nicely on small screens */
+        }
+        .prompt-btn {
+            flex: 1 1 48%;               /* two per row */
+            min-width: 180px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,.6);
+            background: rgba(255,255,255,.25);
+            color: #fff;                 /* matches your purple bg */
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .prompt-btn:hover { background: rgba(255,255,255,.35); }
+
         .dropdown-section {
             background: #f8f9fa;
             border: 2px solid #e9ecef;
@@ -520,9 +539,23 @@
 
             <!-- AI Agent Section -->
             <div class="ai-agent-section">
-                <h3>🤖 AI Agent</h3>
-                <input type="text" class="ai-input" placeholder="Ask about courses, prerequisites, or planning...">
-                <button class="ai-button">Ask AI</button>
+            <h3>🤖 AI Agent</h3>
+            <input type="text" class="ai-input" placeholder="Ask about courses, prerequisites, or planning...">
+
+            <!-- Prompt templates container -->
+            <div class="prompt-templates">
+                <button class="prompt-btn"
+                onclick="document.querySelector('.ai-input').value=`Given the courses I've completed ({{completedCourses}}), what courses should I take next to stay on track for graduation?`">
+                What should I take next?
+                </button>
+
+                <button class="prompt-btn"
+                onclick="document.querySelector('.ai-input').value=`What are the requirements for {{courseCode}}? Include prerequisites and corequisites.`">
+                Course requirements
+                </button>
+            </div>
+
+            <button class="ai-button">Ask AI</button>
             </div>
 
             <!-- Class Checklist / Class Planner Dropdown -->

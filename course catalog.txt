@@ -1,0 +1,74 @@
+Science
+Degree Program Hours: 120
+The Bachelor of Science program in Computer Science is
+accredited by the Computing Accreditation Commission of
+ABET https://www.abet.org
+Students must follow regular University admission
+procedures and upon admission declare their specific
+major as Computer Science. Two tracks are available in
+the program. The Computer Science track should be
+followed by the student who intends to continue to
+graduate study in computer science. The Software
+Design and Development track may be followed by the
+student who intends to pursue a software engineering
+career.
+All required courses must be completed with a grade of
+"C" or better. All students must participate in KFSCIS
+assessment activities and successfully complete an exit
+interview prior to graduation.
+Lower Division
+Students must complete the following courses as part of
+their course work, preferably during the first 60 credits and
+complete COP 2210 with a grade of “C” or higher:
+Common Prerequisite Courses
+Please visit https://cpm.flvc.org for a current list of
+state-approved common prerequisites.
+COP 2210 1 Computer Programming I
+MAC 2311 Calculus I
+MAC 2312 Calculus II
+Science Group 1*
+Science Group 1 Lab*
+Science Group 2*
+Science Group 2 Lab*
+*The following courses and corresponding lab may be
+used for Science Group 1:
+BSC 2010/2010L, CHM 1045/1045L, ESC 1000/1000L,
+PHY 2048/2048L.
+The following courses and corresponding lab may be used
+for Science Group 2:
+BSC 1010/1010L, GLY 3039/3039L, PHY 2049/2049L.
+Except for CHM-1046/1046L, all courses on the list can be
+used to satisfy the UCC Natural Sciences requirement.
+Transfer courses and labs not listed but that develop an
+understanding of the scientific method and are designated
+for science or engineering majors will be considered.
+Upper Division Requirements
+At least 50% of the upper division credits required for the
+BS in Computer Science must be taken at FIU.
+Courses Required for the Degree: (both tracks)
+Third and Fourth Years
+CGS 1920 Introduction to the Field of Computing 1
+or
+COP 1000 Computer Science for Everyone 3
+or
+IDC 1000 Intro to Computer Programming 3
+COT 3100 Discrete Structures 3
+or
+MAD 2104 Discrete Mathematics 3
+ENC 3249 Professional and Technical Writing for
+Computing 3
+or
+ENC 3213 Professional and Technical Writing 3
+CDA 3102 Computer Architecture 3
+CEN 4010 Software Engineering I 3
+CGS 3095 Technology in the Global Arena – GL 3
+CNT 4713 Net-Centric Computing 3
+COP 3530 Data Structures 3
+COP 3337 Computer Programming II 3
+COP 4338 Systems Programming 3
+COP 4555 Principles of Programming Languages 3
+COP 4610 Operating Systems Principles 3
+STA 3033 Introduction to Probability and Statistics
+for CS 3
+*CIS 3950 Capstone I 1
+*CIS 4951 Capstone II 2

@@ -21,27 +21,66 @@ function switchTab(tabName) {
     event.target.classList.add('active');
 }
 
+// Dropdown toggle functionality
+function toggleDropdown(sectionName) {
+    const content = document.getElementById(sectionName + '-content');
+    const arrow = document.getElementById(sectionName + '-arrow');
+    const header = arrow.parentElement;
+
+    const isExpanded = content.classList.contains('expanded');
+
+    if (isExpanded) {
+        // Collapse
+        content.classList.remove('expanded');
+        arrow.classList.remove('rotated');
+        header.classList.remove('active');
+    } else {
+        // Expand
+        content.classList.add('expanded');
+        arrow.classList.add('rotated');
+        header.classList.add('active');
+    }
+}
+
 // Course completion functionality
 document.addEventListener('DOMContentLoaded', function () {
     // Load saved progress from Chrome storage
     loadProgress();
 
     // Add event listeners to checkboxes
-    document.querySelectorAll('.course-checkbox').forEach(checkbox => {
+    document.querySelectorAll('.course-checkbox-item input').forEach(checkbox => {
         checkbox.addEventListener('change', function () {
-            const courseInfo = this.nextElementSibling;
-            const courseCode = courseInfo.querySelector('.course-code').textContent;
-
+            const item = this.closest('.course-checkbox-item');
             if (this.checked) {
-                courseInfo.classList.add('completed');
-                saveCompletedCourse(courseCode);
+                item.classList.add('completed');
             } else {
-                courseInfo.classList.remove('completed');
-                removeCompletedCourse(courseCode);
+                item.classList.remove('completed');
             }
             updateProgress();
         });
     });
+
+    // AI Agent functionality
+    const aiButton = document.querySelector('.ai-button');
+    const aiInput = document.querySelector('.ai-input');
+    
+    if (aiButton && aiInput) {
+        aiButton.addEventListener('click', function () {
+            const query = aiInput.value.trim();
+            if (query) {
+                alert(`AI: Looking up information about "${query}"...`);
+                aiInput.value = '';
+            }
+        });
+
+        // Allow Enter key to submit AI query (Shift+Enter for new line)
+        aiInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                aiButton.click();
+            }
+        });
+    }
 });
 
 // Save completed course to Chrome storage
@@ -72,13 +111,13 @@ function loadProgress() {
     chrome.storage.sync.get(['completedCourses'], function (result) {
         const completed = result.completedCourses || [];
 
-        document.querySelectorAll('.course-checkbox').forEach(checkbox => {
-            const courseInfo = checkbox.nextElementSibling;
-            const courseCode = courseInfo.querySelector('.course-code').textContent;
+        document.querySelectorAll('.course-checkbox-item input').forEach(checkbox => {
+            const item = checkbox.closest('.course-checkbox-item');
+            const courseCode = item.querySelector('span').textContent.split('\n')[0].trim();
 
             if (completed.includes(courseCode)) {
                 checkbox.checked = true;
-                courseInfo.classList.add('completed');
+                item.classList.add('completed');
             }
         });
 
@@ -88,25 +127,12 @@ function loadProgress() {
 
 // Update progress display
 function updateProgress() {
-    const totalCheckboxes = document.querySelectorAll('.course-checkbox').length;
-    const checkedBoxes = document.querySelectorAll('.course-checkbox:checked').length;
+    const total = document.querySelectorAll('.course-checkbox-item').length;
+    const completed = document.querySelectorAll('.course-checkbox-item.completed').length;
+    const percentage = Math.floor((completed / total) * 100);
 
-    // Calculate credits (assuming 3 credits per course on average)
-    const totalCredits = 120; // CS degree total
-    const completedCredits = Math.floor((checkedBoxes / totalCheckboxes) * totalCredits);
-
-    // Update progress cards
-    const progressCards = document.querySelectorAll('.progress-card .number');
-    if (progressCards[0]) progressCards[0].textContent = completedCredits;
-
-    // Calculate semesters remaining
-    const remainingCredits = totalCredits - completedCredits;
-    const semestersLeft = Math.ceil(remainingCredits / 15); // 15 credits per semester
-    if (progressCards[2]) progressCards[2].textContent = semestersLeft;
-
-    // Update prerequisites percentage
-    const prereqPercentage = Math.floor((checkedBoxes / totalCheckboxes) * 100);
-    if (progressCards[3]) progressCards[3].textContent = prereqPercentage + '%';
+    // Update progress displays
+    console.log(`Progress: ${completed}/${total} (${percentage}%)`);
 }
 
 // Open PantherSoft registration
@@ -196,4 +222,3 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
         processSyncedData(request.data);
     }
 });
-
