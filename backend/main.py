@@ -2,6 +2,8 @@ from typing import Union
 
 from fastapi import FastAPI
 
+import google_api
+
 app = FastAPI()
 
 ''' List of Calls between Frontend and Backend
@@ -10,16 +12,17 @@ app = FastAPI()
  - Request user's saved schedule (?)
  - Request stuff from AI agent (What things in particular to be determined)
 
-
-
 '''
 
+
 #MAP STUFF
+
 '''
     Since the map is gonna be the same between different use cases (same location in thing)
     the frontend will request what action it's taking, and the backend will return the map
     with the relevant markers/paths on it
 '''
+
     # Show path between all locations in single day
     # Show location of class on map
     
@@ -32,11 +35,16 @@ app = FastAPI()
  - Route - takes a sequence of classes and returns the route between them
  
 
-
-
-
 '''
+@app.get("/route/get_route/{class_list_string}")
+def get_route(class_list_string: str):
+    class_list = class_list_string.split(',')
+    return google_api.get_route(class_list)
 
+@app.get("/route/get_route_travel_time{class_list_string}")
+def get_route_times(class_list_string: str):
+    class_list = class_list_string.split(',')
+    return google_api.get_route_times(class_list)
 
 
 

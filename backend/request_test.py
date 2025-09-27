@@ -3,10 +3,9 @@ import requests
 import os
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path='.venv/.env')  # Loads variables from .env
+load_dotenv()  # Loads variables from .env
 
 api_key = os.getenv("GOOGLE_API_KEY")
-
 
 def get_posts():
 

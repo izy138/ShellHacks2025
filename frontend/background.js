@@ -1,4 +1,4 @@
-// background.js - Background Service Worker for FIU Degree Tracker
+p// background.js - Background Service Worker for FIU Degree Tracker
 
 // Installation and setup
 chrome.runtime.onInstalled.addListener(function (details) {
