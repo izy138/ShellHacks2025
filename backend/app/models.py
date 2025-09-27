@@ -6,17 +6,25 @@ from datetime import time
 class Course(BaseModel):
     code: str
     name: str
-    description: Optional[str] = None
+    description: str
     credits: int
     prereqs: List[str] = []
     coreqs: List[str] = []
+
+# ----------------- Building -----------------
+class Building(BaseModel):
+    code: str
+    full_name: str
+    adress: str
+    google_maps_place_id: str
 
 # ----------------- CurrentCourse -----------------
 class CurrentCourse(Course):
     start_time: time
     end_time: time
-    location: dict  # e.g., {"building": "Engineering Hall", "address": "123 College Ave", "google_maps_place_id": "ChIJN1t_tDeuEmsRUsoyG83frY4"}
+    location: Building 
     professor: str
+
 
 # ----------------- Major -----------------
 class Major(BaseModel):
