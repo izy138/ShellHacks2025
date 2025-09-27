@@ -1,0 +1,21 @@
+# panther-planner/sample_data.py
+SAMPLE_SECTIONS = [
+    {"crn":"10001","term":"2026 Spring","course":"COP3530","title":"Data Structures",
+     "credits":3,"campus":"MMC","modality":"InPerson","days":["Mon","Wed"],
+     "start":"09:00","end":"10:15","instructor":"Dr. Diaz"},
+    {"crn":"10002","term":"2026 Spring","course":"COP3530","title":"Data Structures",
+     "credits":3,"campus":"MMC","modality":"InPerson","days":["Tue","Thu"],
+     "start":"13:00","end":"14:15","instructor":"Dr. Diaz"},
+    {"crn":"10003","term":"2026 Spring","course":"CDA3103","title":"Computer Org",
+     "credits":3,"campus":"MMC","modality":"InPerson","days":["Mon","Wed"],
+     "start":"10:30","end":"11:45","instructor":"Prof. Chen"},
+    {"crn":"10004","term":"2026 Spring","course":"COT3100","title":"Discrete Structures",
+     "credits":3,"campus":"MMC","modality":"InPerson","days":["Tue","Thu"],
+     "start":"09:30","end":"10:45","instructor":"Prof. Wu"},
+    {"crn":"20001","term":"2026 Spring","course":"CDA3103","title":"Computer Org (BBC)",
+     "credits":3,"campus":"BBC","modality":"InPerson","days":["Tue","Thu"],
+     "start":"08:00","end":"09:15","instructor":"Prof. Lee"},
+    {"crn":"30001","term":"2026 Spring","course":"COT3100","title":"Discrete (Online)",
+     "credits":3,"campus":"Online","modality":"Online","days":[],
+     "start":"00:00","end":"00:00","instructor":"TBA"},
+]
