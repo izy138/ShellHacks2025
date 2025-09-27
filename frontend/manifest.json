@@ -7,7 +7,10 @@
   "permissions": [
     "activeTab",
     "storage",
-    "scripting"
+    "scripting",
+    "notifications",
+    "alarms",
+    "contextMenus"
   ],
   
   "host_permissions": [
@@ -33,8 +36,7 @@
         "https://my.fiu.edu/*",
         "https://panthersoft.fiu.edu/*"
       ],
-      "js": ["content.js"],
-      "css": ["content.css"]
+      "js": ["content.js"]
     }
   ],
   
@@ -56,4 +58,3 @@
     }
   ]
 }
-

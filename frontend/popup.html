@@ -13,20 +13,24 @@
         }
 
         body {
-            width: 30vw;
-            height: 100vh;
+            width: 400px;
+            height: 600px;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #333;
             overflow-x: hidden;
-            min-width: 450px;
+            margin: 0;
+            padding: 0;
         }
 
         .container {
-            height: 100vh;
+            width: 100%;
+            height: 100%;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
         }
 
         .header {
@@ -50,6 +54,8 @@
 
         .content {
             padding: 15px;
+            flex: 1;
+            overflow-y: auto;
         }
 
         .major-selector {
@@ -242,7 +248,7 @@
             border-radius: 6px;
             font-size: 12px;
             transition: all 0.3s ease;
-            max-height: 45px;
+            min-height: 40px;
         }
 
         .course-checkbox-item:hover {
@@ -430,7 +436,7 @@
 
         /* Course item text styling */
         .course-checkbox-item span {
-            line-height: 1;
+            line-height: 1.2;
         }
 
         .course-checkbox-item small {
@@ -547,7 +553,7 @@
                     <div class="dropdown-inner">
                         <div class="search-filters">
                             <input type="text" class="filter-input" placeholder="Search courses...">
-                            <!-- <input type="text" class="filter-input" placeholder="Filter semester..."> -->
+                            <input type="text" class="filter-input" placeholder="Filter semester...">
                         </div>
 
                         <div class="course-grid">
@@ -905,7 +911,7 @@
                             <div class="route-status">📍 Class</div>
                         </div>
 
-                        <button class="map-button">🗺️ Open in Google Maps</button>
+                        <button class="map-button" onclick="openMaps()">🗺️ Open in Google Maps</button>
                     </div>
                 </div>
             </div>
@@ -948,67 +954,7 @@
         </div>
     </div>
 
-    <script>
-        function toggleDropdown(sectionName) {
-            const content = document.getElementById(sectionName + '-content');
-            const arrow = document.getElementById(sectionName + '-arrow');
-            const header = arrow.parentElement;
-
-            const isExpanded = content.classList.contains('expanded');
-
-            if (isExpanded) {
-                // Collapse
-                content.classList.remove('expanded');
-                arrow.classList.remove('rotated');
-                header.classList.remove('active');
-            } else {
-                // Expand
-                content.classList.add('expanded');
-                arrow.classList.add('rotated');
-                header.classList.add('active');
-            }
-        }
-
-        // Course checkbox functionality
-        document.querySelectorAll('.course-checkbox-item input').forEach(checkbox => {
-            checkbox.addEventListener('change', function () {
-                const item = this.closest('.course-checkbox-item');
-                if (this.checked) {
-                    item.classList.add('completed');
-                } else {
-                    item.classList.remove('completed');
-                }
-                updateProgress();
-            });
-        });
-
-        function updateProgress() {
-            const total = document.querySelectorAll('.course-checkbox-item').length;
-            const completed = document.querySelectorAll('.course-checkbox-item.completed').length;
-            const percentage = Math.floor((completed / total) * 100);
-
-            // Update progress displays
-            console.log(`Progress: ${completed}/${total} (${percentage}%)`);
-        }
-
-        // AI Agent functionality
-        document.querySelector('.ai-button').addEventListener('click', function () {
-            const input = document.querySelector('.ai-input');
-            const query = input.value.trim();
-            if (query) {
-                alert(`AI: Looking up information about "${query}"...`);
-                input.value = '';
-            }
-        });
-
-        // Allow Enter key to submit AI query (Shift+Enter for new line)
-        document.querySelector('.ai-input').addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                document.querySelector('.ai-button').click();
-            }
-        });
-    </script>
+    <script src="popup.js"></script>
 </body>
 
 </html>
