@@ -32,20 +32,20 @@
         .header {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            padding: 20px 15px;
+            padding: 12px 15px;
             text-align: center;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .header h1 {
             color: #2c3e50;
-            font-size: 1.4rem;
-            margin-bottom: 5px;
+            font-size: 1.1rem;
+            margin-bottom: 3px;
         }
 
         .header p {
             color: #7f8c8d;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
         }
 
         .content {
@@ -53,25 +53,27 @@
         }
 
         .major-selector {
-            margin-bottom: 20px;
+            margin-top: -5px;
+            margin-bottom: 10px;
         }
 
         .major-selector label {
             display: block;
             font-weight: 600;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             color: #2c3e50;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
 
         .major-dropdown {
             width: 100%;
-            padding: 10px;
+            padding: 6px 10px;
             border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
+            border-radius: 6px;
+            font-size: 13px;
             background: white;
             cursor: pointer;
+            height: 32px;
         }
 
         .major-dropdown:focus {
@@ -82,33 +84,40 @@
         .ai-agent-section {
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            padding: 15px;
+            padding: 20px;
             border-radius: 12px;
             margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
 
         .ai-agent-section h3 {
-            margin-bottom: 10px;
-            font-size: 1rem;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
         }
 
         .ai-input {
             width: 100%;
-            padding: 8px 12px;
+            padding: 12px 15px;
             border: none;
-            border-radius: 6px;
-            margin-bottom: 8px;
-            font-size: 13px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-size: 14px;
+            min-height: 60px;
+            resize: vertical;
+            font-family: inherit;
+            line-height: 1.4;
         }
 
         .ai-button {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.25);
             color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 6px 12px;
-            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            padding: 10px 15px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 13px;
+            font-weight: 600;
             transition: all 0.3s ease;
             width: 100%;
         }
@@ -233,7 +242,7 @@
             border-radius: 6px;
             font-size: 12px;
             transition: all 0.3s ease;
-            min-height: 40px;
+            max-height: 45px;
         }
 
         .course-checkbox-item:hover {
@@ -421,7 +430,7 @@
 
         /* Course item text styling */
         .course-checkbox-item span {
-            line-height: 1.2;
+            line-height: 1;
         }
 
         .course-checkbox-item small {
@@ -521,7 +530,7 @@
             <!-- AI Agent Section -->
             <div class="ai-agent-section">
                 <h3>🤖 AI Agent</h3>
-                <input type="text" class="ai-input" placeholder="Ask about courses, prerequisites, or planning...">
+                <textarea class="ai-input" placeholder="Ask about courses, prerequisites, or planning..." rows="3"></textarea>
                 <button class="ai-button">Ask AI</button>
             </div>
 
@@ -538,7 +547,7 @@
                     <div class="dropdown-inner">
                         <div class="search-filters">
                             <input type="text" class="filter-input" placeholder="Search courses...">
-                            <input type="text" class="filter-input" placeholder="Filter semester...">
+                            <!-- <input type="text" class="filter-input" placeholder="Filter semester..."> -->
                         </div>
 
                         <div class="course-grid">
@@ -989,6 +998,14 @@
             if (query) {
                 alert(`AI: Looking up information about "${query}"...`);
                 input.value = '';
+            }
+        });
+
+        // Allow Enter key to submit AI query (Shift+Enter for new line)
+        document.querySelector('.ai-input').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.querySelector('.ai-button').click();
             }
         });
     </script>
