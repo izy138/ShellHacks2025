@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import List, Dict, Optional
 from datetime import time
 
 # ----------------- Course -----------------
@@ -29,7 +29,7 @@ class Schedule(BaseModel):
 
 # ----------------- CurrentCourse -----------------
 class CurrentCourse(Course):
-    schedule: Schedule
+    schedule: Optional[Schedule]
     professor: str
 
 
