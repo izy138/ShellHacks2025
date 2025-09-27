@@ -14,7 +14,6 @@ app = FastAPI()
 
 '''
 
-
 #MAP STUFF
 
 '''
@@ -27,7 +26,6 @@ app = FastAPI()
     # Show location of class on map
     
     # How will the AI agent use the map?
-
 
 
 '''List of Calls between Backend and Google APIs
@@ -45,6 +43,7 @@ def get_route(class_list_string: str):
 def get_route_times(class_list_string: str):
     class_list = class_list_string.split(',')
     return google_api.get_route_times(class_list)
+
 
 
 
