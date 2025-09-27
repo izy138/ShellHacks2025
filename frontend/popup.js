@@ -111,31 +111,72 @@ function generateUserId() {
     return 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
 }
 
+// Only store user ID in localStorage, sync all user info with backend
 function getUserId() {
     let userId = localStorage.getItem('fiu_degree_tracker_user_id');
     if (!userId) {
         userId = generateUserId();
         localStorage.setItem('fiu_degree_tracker_user_id', userId);
+        // Create user in backend with valid Schedule for blocked_time
+        const defaultSchedule = {
+            blocks: {
+                "Monday": [],
+                "Tuesday": [],
+                "Wednesday": [],
+                "Thursday": [],
+                "Friday": [],
+                "Saturday": [],
+                "Sunday": []
+            }
+        };
+        fetch(`${API_BASE_URL}/users`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId, major: 'COMPSC:BS', taken_courses: [], current_courses: [], blocked_time: defaultSchedule })
+        }).then(res => {
+            if (!res.ok) console.error('Failed to create user in backend');
+        });
         console.log('Generated new user ID:', userId);
     }
     return userId;
 }
 
-function getUserData() {
+async function getUserData() {
     const userId = getUserId();
-    const userData = localStorage.getItem(`fiu_degree_tracker_data_${userId}`);
-    return userData ? JSON.parse(userData) : {
-        completedCourses: [],
-        major: 'COMPSC:BS',
-        schedule: {},
-        preferences: {}
-    };
+    try {
+        const res = await fetch(`${API_BASE_URL}/users/${userId}`);
+        if (!res.ok) throw new Error('User not found');
+        return await res.json();
+    } catch (e) {
+        // If not found, create user in backend with valid Schedule for blocked_time
+        const defaultSchedule = {
+            blocks: {
+                "Monday": [],
+                "Tuesday": [],
+                "Wednesday": [],
+                "Thursday": [],
+                "Friday": [],
+                "Saturday": [],
+                "Sunday": []
+            }
+        };
+        await fetch(`${API_BASE_URL}/users`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId, major: 'COMPSC:BS', taken_courses: [], current_courses: [], blocked_time: defaultSchedule })
+        });
+        return { user_id: userId, major: 'COMPSC:BS', taken_courses: [], current_courses: [], blocked_time: defaultSchedule };
+    }
 }
 
-function saveUserData(data) {
+async function saveUserData(data) {
     const userId = getUserId();
-    localStorage.setItem(`fiu_degree_tracker_data_${userId}`, JSON.stringify(data));
-    console.log('Saved user data for:', userId);
+    await fetch(`${API_BASE_URL}/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    console.log('Synced user data to backend for:', userId);
 }
 
 // Tab switching functionality
@@ -213,26 +254,20 @@ async function fetchMajorCourses(majorId = 'COMPSC:BS') {
 async function fetchCourseDetails(courseCode) {
     console.log('fetchCourseDetails called for:', courseCode);
     
-    // Convert course code to proper format (add space if missing)
-    let formattedCode = courseCode;
-    if (!courseCode.includes(' ')) {
-        formattedCode = courseCode.replace(/([A-Z]+)(\d+)/, '$1 $2');
-    }
-    
-    const url = `${API_BASE_URL}/courses/${encodeURIComponent(formattedCode)}`;
+    const url = `${API_BASE_URL}/courses/${encodeURIComponent(courseCode)}`;
     console.log('Fetching course from URL:', url);
     
     try {
         const response = await fetch(url);
-        console.log('Course response for', formattedCode, ':', response.status);
+        console.log('Course response for', courseCode, ':', response.status);
         
         if (!response.ok) {
             if (response.status === 404) {
-                console.log('Course not found, returning basic info for:', formattedCode);
+                console.log('Course not found, returning basic info for:', courseCode);
                 // Course not found, return basic info
                 return {
-                    code: formattedCode,
-                    name: formattedCode,
+                    code: courseCode,
+                    name: courseCode,
                     credits: 3,
                     prereqs: [],
                     coreqs: []
@@ -241,14 +276,14 @@ async function fetchCourseDetails(courseCode) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const courseData = await response.json();
-        console.log('Course data for', formattedCode, ':', courseData);
+        console.log('Course data for', courseCode, ':', courseData);
         return courseData;
     } catch (error) {
-        console.error(`Error fetching course ${formattedCode}:`, error);
+        console.error(`Error fetching course ${courseCode}:`, error);
         // Return basic course info as fallback
         return {
-            code: formattedCode,
-            name: formattedCode,
+            code: courseCode,
+            name: courseCode,
             credits: 3,
             prereqs: [],
             coreqs: []
@@ -554,28 +589,28 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // Save completed course to user data
-function saveCompletedCourse(courseCode) {
+// Update user.taken_courses in backend when checking/unchecking a class
+async function saveCompletedCourse(courseCode) {
     try {
-        const userData = getUserData();
-        if (!userData.completedCourses.includes(courseCode)) {
-            userData.completedCourses.push(courseCode);
-            saveUserData(userData);
-            console.log('Saved completed course:', courseCode);
+        const userData = await getUserData();
+        if (!userData.taken_courses.includes(courseCode)) {
+            userData.taken_courses.push(courseCode);
+            await saveUserData(userData);
+            console.log('Added to taken_courses:', courseCode);
         }
     } catch (error) {
         console.error('Error saving completed course:', error);
     }
 }
 
-// Remove completed course from user data
-function removeCompletedCourse(courseCode) {
+async function removeCompletedCourse(courseCode) {
     try {
-        const userData = getUserData();
-        const index = userData.completedCourses.indexOf(courseCode);
+        const userData = await getUserData();
+        const index = userData.taken_courses.indexOf(courseCode);
         if (index > -1) {
-            userData.completedCourses.splice(index, 1);
-            saveUserData(userData);
-            console.log('Removed completed course:', courseCode);
+            userData.taken_courses.splice(index, 1);
+            await saveUserData(userData);
+            console.log('Removed from taken_courses:', courseCode);
         }
     } catch (error) {
         console.error('Error removing completed course:', error);
