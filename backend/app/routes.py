@@ -9,7 +9,8 @@ from app.services.mongo_services import (
     insert_location, get_location
 )
 from app.services.google_services import (
-    get_route, get_route_times
+    get_route as g_get_route,
+    get_route_times as g_get_route_times
 )
 
 router = APIRouter(prefix="/api")
@@ -93,8 +94,7 @@ def get_route_query(place_id_list: List[str] = Query(...)):
     try:
         # Convert list of place_id strings to list of dicts
         place_ids = [{"place_id": pid} for pid in place_id_list]
-        from app.services.google_services import get_route
-        return get_route(place_ids)
+        return g_get_route(place_id_list)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing route: {str(e)}")
 
@@ -108,8 +108,7 @@ def get_route_endpoint(place_ids: str):
     try:
         # Decode URL-encoded JSON string
         place_id_list = json.loads(place_ids)
-        from app.services.google_services import get_route
-        return get_route(place_id_list)
+        return g_get_route(place_id_list)
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=400, detail=f"Invalid JSON format: {str(e)}")
     except Exception as e:
@@ -118,4 +117,4 @@ def get_route_endpoint(place_ids: str):
 @router.get("/route/get_route_travel_time{class_list_string}")
 def get_route_times(class_list_string: str):
     class_list = class_list_string.split(',')
-    return get_route_times(class_list)
+    return g_get_route_times(class_list)
