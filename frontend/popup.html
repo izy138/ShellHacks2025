@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FIU Panther Planner</title>
+    <link rel="stylesheet" href="styles.css">
     <script src="config.js"></script>
     <script>
         // Load Google Maps API with key from config
@@ -12,583 +13,6 @@
         script.src = `https://maps.googleapis.com/maps/api/js?key=${CONFIG.GOOGLE_MAPS_API_KEY}&libraries=geometry`;
         document.head.appendChild(script);
     </script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            width: 430px;
-            height: 755px;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
-            overflow-x: hidden;
-            margin: 0;
-            padding: 0;
-            position: fixed;
-            top: 0;
-            right: 0;
-            z-index: 9999;
-            border: 2px solid #013677;
-        }
-
-        .container {
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .header {
-            background: url('icons/banner.png') center/cover no-repeat;
-            backdrop-filter: blur(10px);
-            padding: 20px 15px;
-            text-align: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            position: relative;
-        }
-        
-        .header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(5px);
-            z-index: -1;
-        }
-
-        .header h1 {
-            color: #ffffff;
-            font-size: 1.1rem;
-            margin-bottom: 2px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
-            position: relative;
-            z-index: 1;
-        }
-
-        .header p {
-            color: #7f8c8d;
-            font-size: 0.7rem;
-            margin: 0;
-        }
-
-        .content {
-            padding: 15px;
-        }
-
-        .major-selector {
-            margin-bottom: 10px;
-            margin-top: -5px;
-        }
-
-        .major-selector label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 4px;
-            color: #2c3e50;
-            font-size: 0.8rem;
-        }
-
-        .major-dropdown {
-            width: 100%;
-            padding: 6px 10px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 13px;
-            background: white;
-            cursor: pointer;
-            height: 32px;
-        }
-
-        .major-dropdown:focus {
-            outline: none;
-            border-color: #3498db;
-        }
-
-        .ai-agent-section {
-            background: #013677;
-            color: white;
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 10px;
-            width: 100%;
-            min-width: 400px;
-            max-width: 400px;
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-            box-sizing: border-box;
-            transition: all 0.3s ease;
-        }
-
-        .ai-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            margin-bottom: 5px;
-        }
-
-        .ai-header h3 {
-            margin: 0;
-            font-size: 1rem;
-            color: #f3a806;
-            font-weight: 700;
-        }
-
-        .ai-arrow {
-            font-size: 1.2rem;
-            color: #f3a806;
-            transition: transform 0.3s ease;
-        }
-
-        .ai-arrow.rotated {
-            transform: rotate(180deg);
-        }
-
-        .ai-content {
-            max-height: 160px;
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-        }
-
-        .ai-content.collapsed {
-            max-height: 0;
-            padding: 0;
-        }
-
-        .ai-input {
-            width: 100%;
-            padding: 8px 12px;
-            border: none;
-            border-radius: 6px;
-            margin-bottom: 6px;
-            font-size: 13px;
-            height: 32px;
-            min-height: 32px;
-            max-height: 32px;
-            flex-shrink: 0;
-        }
-
-        .ai-button {
-            background: #fbe099;
-            color: #1e40af;
-            border: 1px solid rgba(30, 64, 175, 0.5);
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-            transition: all 0.3s ease;
-            width: 100%;
-            height: 32px;
-            min-height: 32px;
-            max-height: 32px;
-            flex-shrink: 0;
-            font-weight: 600;
-        }
-
-        .ai-button:hover {
-            background: #eab42c;
-            border-color: #1e40af;
-            color: #1d4ed8;
-        }
-
-        .prompt-templates {
-            display: flex;
-            gap: 10px;
-            margin: 8px 0 8px;
-            flex-wrap: nowrap;
-            /* prevents wrapping that could cause movement */
-            height: 40px;
-            min-height: 40px;
-            max-height: 40px;
-            width: 100%;
-            flex-shrink: 0;
-            box-sizing: border-box;
-        }
-
-        .prompt-btn {
-            width: 180px;
-            height: 40px;
-            min-width: 180px;
-            max-width: 180px;
-            padding: 8px 10px;
-            border-radius: 10px;
-            border: 2px solid #1e40af;
-            background: #ffc13c;
-            color: #1e40af;
-            font-weight: 600;
-            cursor: pointer;
-            flex-shrink: 0;
-            box-sizing: border-box;
-            font-size: 0.75rem;
-            text-align: center;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .prompt-btn:hover {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            border-color: #1d4ed8;
-            color: #1d4ed8;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(30, 64, 175, 0.3);
-        }
-
-        .dropdown-section {
-            background: #ffdb8c;
-            border: 2px solid #013677;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .dropdown-header {
-            padding: 15px;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: transparent;
-            transition: all 0.3s ease;
-        }
-
-        .dropdown-header:hover {
-            background: rgba(119, 78, 1, 0.1);
-        }
-
-        .dropdown-header.active {
-            background: rgba(247, 178, 4, 0.541);
-            border-bottom: 1px solid #013677;
-        }
-
-        .dropdown-title {
-            color: #000000;
-            font-size: 0.95rem;
-            font-weight: 600;
-        }
-
-        .dropdown-subtitle {
-            color: #000000;
-            font-size: 0.75rem;
-            margin-top: 2px;
-        }
-
-        .dropdown-arrow {
-            font-size: 1.2rem;
-            color: #7f8c8d;
-            transition: transform 0.3s ease;
-        }
-
-        .dropdown-arrow.rotated {
-            transform: rotate(180deg);
-        }
-
-        .dropdown-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease;
-            background: white;
-        }
-
-        .dropdown-content.expanded {
-            max-height: 400px;
-        }
-
-        .dropdown-inner {
-            padding: 15px;
-        }
-
-        /* Course Checklist Styles */
-        .search-filters {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-
-        .filter-input {
-            flex: 1;
-            padding: 6px 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-
-        .course-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 5px;
-            margin-bottom: 5px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .course-grid::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .course-grid::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 3px;
-        }
-
-        .course-grid::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
-            border-radius: 3px;
-        }
-
-        .course-grid::-webkit-scrollbar-thumb:hover {
-            background: #a8a8a8;
-        }
-
-        .course-checkbox-item {
-            display: flex;
-            align-items: center;
-            padding: 6px 6px;
-            background: #f8f9fa;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 12px;
-            transition: all 0.3s ease;
-            max-height: 68px;
-        }
-
-        .course-checkbox-item:hover {
-            background: #e8f4f8;
-            border-color: #3498db;
-        }
-
-        .course-checkbox-item input {
-            margin-right: 6px;
-            transform: scale(0.9);
-        }
-
-        .course-checkbox-item.completed {
-            background: #d4edda;
-            border-color: #27ae60;
-            opacity: 0.8;
-        }
-
-        .semester-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-        }
-
-        .semester-box {
-            background: #f8f9fa;
-            border: 2px dashed #dee2e6;
-            border-radius: 6px;
-            padding: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .semester-box:hover {
-            border-color: #3498db;
-            background: #f0f8ff;
-        }
-
-        .semester-box.current {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border-color: #5a67d8;
-        }
-
-        .semester-label {
-            font-weight: 600;
-            font-size: 0.8rem;
-            margin-bottom: 3px;
-        }
-
-        .semester-year {
-            font-size: 1rem;
-            font-weight: bold;
-        }
-
-
-        /* Progress Tracking Styles */
-        .progress-stats {
-            background: #013677;
-            color: #f3a806;
-            padding: 12px;
-            border-radius: 6px;
-            text-align: center;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            margin-top: 8px;
-        }
-
-        .stat-item {
-            text-align: center;
-        }
-
-        .stat-number {
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-bottom: 2px;
-        }
-
-        .stat-label {
-            font-size: 0.7rem;
-            opacity: 0.9;
-        }
-
-        /* Route Planning Styles */
-        .route-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #f0f0f0;
-            font-size: 0.8rem;
-        }
-
-        .route-item:last-child {
-            border-bottom: none;
-        }
-
-        .route-info {
-            flex: 1;
-        }
-
-        .route-time {
-            font-weight: 600;
-            color: #2c3e50;
-        }
-
-        .route-location {
-            color: #7f8c8d;
-            font-size: 0.75rem;
-        }
-
-        .route-status {
-            color: #3498db;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        /* Course item text styling */
-        .course-checkbox-item span {
-            line-height: 1.2;
-        }
-
-        .course-checkbox-item small {
-            color: #7f8c8d;
-            font-size: 0.7rem;
-            display: block;
-            margin-top: 2px;
-        }
-
-
-        /* Scrollbar */
-        .container::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .container::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.1);
-        }
-
-        .container::-webkit-scrollbar-thumb {
-            background: rgba(52, 152, 219, 0.5);
-            border-radius: 2px;
-        }
-
-        .embedded-map {
-            margin-top: 15px;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .embedded-map iframe {
-            width: 100%;
-            height: 200px;
-            border: none;
-            border-radius: 8px;
-        }
-
-        .loading-message {
-            text-align: center;
-            padding: 20px;
-            color: #666;
-            font-style: italic;
-        }
-
-        /* Schedule Calendar Styles */
-        .schedule-calendar {
-            background: white;
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .day-column {
-            text-align: center;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            background: #f8f9fa;
-        }
-
-        .day-header {
-            background: #667eea;
-            color: white;
-            padding: 8px 4px;
-            font-weight: 600;
-            font-size: 0.8rem;
-            border-radius: 6px 6px 0 0;
-        }
-
-        .day-content {
-            padding: 8px 4px;
-            min-height: 80px;
-        }
-
-        .schedule-item {
-            margin-bottom: 4px;
-            padding: 4px 6px;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: 500;
-            line-height: 1.2;
-        }
-
-        .schedule-item.class {
-            background: #e8f4f8;
-            color: #2c3e50;
-            border: 1px solid #3498db;
-        }
-
-        .schedule-item.free {
-            background: #f0f0f0;
-            color: #7f8c8d;
-            font-style: italic;
-        }
-    </style>
 </head>
 
 <body>
@@ -615,7 +39,9 @@
             <!-- AI Agent Section -->
             <div class="ai-agent-section">
                 <div class="ai-header" id="ai-header">
-                    <h3><img src="icons/fiu_panther.png" alt="FIU Panther" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 5px;"> Ask Roary</h3>
+                    <h3><img src="icons/fiu_panther.png" alt="FIU Panther"
+                            style="width: 20px; height: 20px; vertical-align: middle; margin-right: 5px;"> Ask Roary
+                    </h3>
                     <div class="ai-arrow" id="ai-arrow">▼</div>
                 </div>
                 <div class="ai-content" id="ai-content">
@@ -640,7 +66,19 @@
             <div class="dropdown-section">
                 <div class="dropdown-header" id="checklist-header">
                     <div>
-                        <div class="dropdown-title">📚 Class Checklist</div>
+                        <div class="dropdown-title"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round"
+                                class="lucide lucide-book-open-text-icon lucide-book-open-text"
+                                style="display: inline-block; vertical-align: text-top; margin-right: 4px; transform: translateY(1px);">
+                                <path d="M12 7v14" />
+                                <path d="M16 12h2" />
+                                <path d="M16 8h2" />
+                                <path
+                                    d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z" />
+                                <path d="M6 12h2" />
+                                <path d="M6 8h2" />
+                            </svg> Class Checklist</div>
                         <div class="dropdown-subtitle">Track completed courses for your degree</div>
                     </div>
                     <div class="dropdown-arrow" id="checklist-arrow">▼</div>
@@ -655,22 +93,95 @@
                         <div class="course-grid" id="course-grid">
                             <!-- Courses will be loaded dynamically from API -->
                             <div class="loading-message">Loading courses...</div>
-                            </div>
+                        </div>
 
+                    </div>
+                </div>
+            </div>
+            <div class="dropdown-section">
+                <div class="dropdown-header" id="schedule-header">
+                    <div>
+                        <div class="dropdown-title"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round"
+                                class="lucide lucide-calendar-check-icon lucide-calendar-check"
+                                style="display: inline-block; vertical-align: text-top; margin-right: 4px; transform: translateY(1px);">
+                                <path d="M8 2v4" />
+                                <path d="M16 2v4" />
+                                <rect width="18" height="18" x="3" y="4" rx="2" />
+                                <path d="M3 10h18" />
+                                <path d="m9 16 2 2 4-4" />
+                            </svg> Schedule</div>
+                        <div class="dropdown-subtitle">Weekly class schedule and calendar</div>
+                    </div>
+                    <div class="dropdown-arrow" id="schedule-arrow">▼</div>
+                </div>
+                <div class="dropdown-content" id="schedule-content">
+                    <div class="dropdown-inner">
+                        <div class="schedule-calendar">
+                            <div class="calendar-header">
+                                <h4 style="margin-bottom: 10px; color: #2c3e50; font-size: 0.9rem;">This Week's Schedule
+                                </h4>
                             </div>
+                            <div class="calendar-grid">
+                                <div class="day-column">
+                                    <div class="day-header">Mon</div>
+                                    <div class="day-content">
+                                        <div class="schedule-item class">9:30 AM<br>COP 3530</div>
+                                        <div class="schedule-item class">12:30 PM<br>CAI 4002</div>
+                                    </div>
+                                </div>
+                                <div class="day-column">
+                                    <div class="day-header">Tue</div>
+                                    <div class="day-content">
+                                        <div class="schedule-item class">11:00 AM<br>MAD 3512</div>
+                                        <div class="schedule-item class">2:00 PM<br>COT 3541</div>
+                                    </div>
+                                </div>
+                                <div class="day-column">
+                                    <div class="day-header">Wed</div>
+                                    <div class="day-content">
+                                        <div class="schedule-item class">9:30 AM<br>COP 3530</div>
+                                        <div class="schedule-item class">12:30 PM<br>CAI 4002</div>
+                                    </div>
+                                </div>
+                                <div class="day-column">
+                                    <div class="day-header">Thu</div>
+                                    <div class="day-content">
+                                        <div class="schedule-item class">11:00 AM<br>MAD 3512</div>
+                                        <div class="schedule-item class">2:00 PM<br>COT 3541</div>
+                                    </div>
+                                </div>
+                                <div class="day-column">
+                                    <div class="day-header">Fri</div>
+                                    <div class="day-content">
+                                        <div class="schedule-item class">10:00 AM<br>CAP 4052</div>
+                                    </div>
+                                </div>
                             </div>
-                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
 
             <!-- Map and Route Dropdown -->
             <div class="dropdown-section">
                 <div class="dropdown-header" id="routes-header">
                     <div>
-                        <div class="dropdown-title">🗺️ Map and Route</div>
+                        <div class="dropdown-title"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round"
+                                class="lucide lucide-map-pin-icon lucide-map-pin"
+                                style="display: inline-block; vertical-align: text-top; margin-right: 4px; transform: translateY(1px);">
+                                <path
+                                    d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
+                                <circle cx="12" cy="10" r="3" />
+                            </svg> Map and Route</div>
                         <div class="dropdown-subtitle">Campus navigation and building routes</div>
-                            </div>
+                    </div>
                     <div class="dropdown-arrow" id="routes-arrow">▼</div>
-                            </div>
+                </div>
                 <div class="dropdown-content" id="routes-content">
                     <div class="dropdown-inner">
                         <h4 style="margin-bottom: 10px; color: #2c3e50; font-size: 0.9rem;">Monday Route</h4>
@@ -681,7 +192,7 @@
                                 <div class="route-location">COP 3530 - Parking Garage 6</div>
                             </div>
                             <div class="route-status">📍 Start</div>
-                            </div>
+                        </div>
 
                         <div class="route-item">
                             <div class="route-info">
@@ -689,7 +200,7 @@
                                 <div class="route-location">Walk to Academic Health Center</div>
                             </div>
                             <div class="route-status">🚶‍♂️ 8 min</div>
-                            </div>
+                        </div>
 
                         <div class="route-item">
                             <div class="route-info">
@@ -697,76 +208,30 @@
                                 <div class="route-location">CAI 4002 - AHC 5 212A</div>
                             </div>
                             <div class="route-status">📍 Class</div>
-                            </div>
+                        </div>
 
-                        <div class="embedded-map">
+                        <div class="embedded-map" style="margin-bottom: 20px;">
                             <div id="map" style="width: 100%; height: 200px; border-radius: 8px;"></div>
-                            </div>
-                            </div>
-                            </div>
-                            </div>
-
-            <!-- Schedule Dropdown -->
-            <div class="dropdown-section">
-                <div class="dropdown-header" id="schedule-header">
-                    <div>
-                        <div class="dropdown-title">📅 Schedule</div>
-                        <div class="dropdown-subtitle">Weekly class schedule and calendar</div>
-                    </div>
-                    <div class="dropdown-arrow" id="schedule-arrow">▼</div>
-                </div>
-                <div class="dropdown-content" id="schedule-content">
-                    <div class="dropdown-inner">
-                        <div class="schedule-calendar">
-                            <div class="calendar-header">
-                                <h4 style="margin-bottom: 10px; color: #2c3e50; font-size: 0.9rem;">This Week's Schedule</h4>
-                            </div>
-                            <div class="calendar-grid">
-                                <div class="day-column">
-                                    <div class="day-header">Mon</div>
-                                    <div class="day-content">
-                                        <div class="schedule-item class">9:30 AM<br>COP 3530</div>
-                                        <div class="schedule-item class">12:30 PM<br>CAI 4002</div>
-                                </div>
-                                </div>
-                                <div class="day-column">
-                                    <div class="day-header">Tue</div>
-                                    <div class="day-content">
-                                        <div class="schedule-item class">11:00 AM<br>MAD 3512</div>
-                                        <div class="schedule-item class">2:00 PM<br>COT 3541</div>
-                            </div>
-                                </div>
-                                <div class="day-column">
-                                    <div class="day-header">Wed</div>
-                                    <div class="day-content">
-                                        <div class="schedule-item class">9:30 AM<br>COP 3530</div>
-                                        <div class="schedule-item class">12:30 PM<br>CAI 4002</div>
-                                </div>
-                            </div>
-                                <div class="day-column">
-                                    <div class="day-header">Thu</div>
-                                    <div class="day-content">
-                                        <div class="schedule-item class">11:00 AM<br>MAD 3512</div>
-                                        <div class="schedule-item class">2:00 PM<br>COT 3541</div>
-                                </div>
-                                </div>
-                                <div class="day-column">
-                                    <div class="day-header">Fri</div>
-                                    <div class="day-content">
-                                        <div class="schedule-item class">10:00 AM<br>CAP 4052</div>
-                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-                    </div>
-            </div>
+
+            <!-- Schedule Dropdown -->
 
             <!-- Major Tracking Dropdown -->
             <div class="dropdown-section">
                 <div class="dropdown-header" id="tracking-header">
                     <div>
-                        <div class="dropdown-title">📊 Major Tracking</div>
+                        <div class="dropdown-title"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round"
+                                class="lucide lucide-chart-column-big-icon lucide-chart-column-big"
+                                style="display: inline-block; vertical-align: text-top; margin-right: 4px; transform: translateY(1px);">
+                                <path d="M3 3v16a2 2 0 0 0 2 2h16" />
+                                <rect x="15" y="5" width="4" height="12" rx="1" />
+                                <rect x="7" y="8" width="4" height="9" rx="1" />
+                            </svg> Major Tracking</div>
                         <div class="dropdown-subtitle">Credits, GPA, semester, prerequisites progress</div>
                     </div>
                     <div class="dropdown-arrow" id="tracking-arrow">▼</div>

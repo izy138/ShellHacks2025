@@ -46,6 +46,7 @@ const API_BASE_URL = 'http://127.0.0.1:8000/api';
 // Google Maps and Polyline functionality
 let map;
 let polylines = [];
+let routeMarkers = [];
 
 function initMap() {
     // FIU coordinates
@@ -54,18 +55,75 @@ function initMap() {
     map = new google.maps.Map(document.getElementById('map'), {
         zoom: 16,
         center: fiuLocation,
-        mapTypeId: 'roadmap'
+        mapTypeId: 'roadmap',
+        mapTypeControl: true,
+        mapTypeControlOptions: {
+            style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+            position: google.maps.ControlPosition.TOP_RIGHT
+        },
+        fullscreenControl: true,
+        fullscreenControlOptions: {
+            position: google.maps.ControlPosition.TOP_LEFT
+        }
     });
     
-    // Add FIU marker
-    new google.maps.Marker({
-        position: fiuLocation,
-        map: map,
-        title: 'Florida International University'
-    });
+    // Add custom CSS to make all map controls smaller
+    const style = document.createElement('style');
+    style.textContent = `
+        /* Map type control buttons */
+        .gm-style .gm-style-mtc {
+            font-size: 10px !important;
+        }
+        .gm-style .gm-style-mtc button {
+            font-size: 10px !important;
+            padding: 3px 6px !important;
+            min-width: auto !important;
+            height: 24px !important;
+        }
+        
+        /* Zoom control buttons */
+        .gm-style .gm-zoom-control {
+            font-size: 10px !important;
+        }
+        .gm-style .gm-zoom-control button {
+            width: 24px !important;
+            height: 24px !important;
+            font-size: 12px !important;
+            padding: 0 !important;
+        }
+        
+        /* Fullscreen control button */
+        .gm-style .gm-fullscreen-control {
+            width: 24px !important;
+            height: 24px !important;
+            font-size: 10px !important;
+        }
+        
+        /* Copyright text */
+        .gm-style .gm-style-cc {
+            font-size: 9px !important;
+        }
+        
+        /* Street view control */
+        .gm-style .gm-style-sv {
+            width: 24px !important;
+            height: 24px !important;
+        }
+    `;
+    document.head.appendChild(style);
     
     // Add encoded polyline route
     addEncodedPolyline();
+    
+    // Fetch and display real route with alternating colors
+    const testPlaceIds = [
+        'ChIJbWv74i-_2YgRqsagPWgY2Qs',
+        'ChIJh1r4NS6_2YgR-jjbTyCaHZI', 
+        'ChIJxZbHujq_2YgRdqaxvf4LcBQ'
+    ];
+    
+    // Call the new function to fetch real route data
+    fetchAndDisplayRoute(testPlaceIds);
 }
 
 function addEncodedPolyline() {
@@ -101,11 +159,14 @@ function addEncodedPolyline() {
 }
 
 function addMultiplePolylines(polylineData) {
-    // Clear existing polylines
+    // Clear existing polylines and markers
     polylines.forEach(polyline => polyline.setMap(null));
     polylines = [];
+    routeMarkers.forEach(marker => marker.setMap(null));
+    routeMarkers = [];
     
-    const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF'];
+    // FIU colors: Blue and Gold alternating
+    const colors = ['#003366', '#B8860B']; // FIU Blue and Dark Gold
     
     polylineData.forEach((data, index) => {
         try {
@@ -117,11 +178,27 @@ function addMultiplePolylines(polylineData) {
                 geodesic: true,
                 strokeColor: color,
                 strokeOpacity: 1.0,
-                strokeWeight: 3
+                strokeWeight: 4
             });
             
             polyline.setMap(map);
             polylines.push(polyline);
+            
+            // Add start marker for first polyline
+            if (index === 0 && path.length > 0) {
+                addRouteMarker(path[0], 'start');
+            }
+            
+            // Add end marker for last polyline
+            if (index === polylineData.length - 1 && path.length > 0) {
+                addRouteMarker(path[path.length - 1], 'end');
+            }
+            
+            // Add intermediate waypoint markers (grey dots) for connection points
+            if (index > 0 && path.length > 0) {
+                // Add marker at the start of this segment (which connects to previous segment)
+                addRouteMarker(path[0], 'waypoint');
+            }
             
         } catch (error) {
             console.error(`Error adding polyline ${index}:`, error);
@@ -129,7 +206,153 @@ function addMultiplePolylines(polylineData) {
     });
 }
 
-// Example function to add multiple route segments
+// Function to add route markers (start/end/waypoint)
+function addRouteMarker(position, type) {
+    let markerColor, markerSize, title;
+    
+    switch(type) {
+        case 'start':
+            markerColor = '#27ae60'; // Green
+            markerSize = 8;
+            title = 'Route Start';
+            break;
+        case 'end':
+            markerColor = '#e74c3c'; // Red
+            markerSize = 8;
+            title = 'Route End';
+            break;
+        case 'waypoint':
+            markerColor = '#95a5a6'; // Grey
+            markerSize = 6; // Slightly smaller for waypoints
+            title = 'Route Waypoint';
+            break;
+        default:
+            markerColor = '#95a5a6';
+            markerSize = 6;
+            title = 'Route Point';
+    }
+    
+    const marker = new google.maps.Marker({
+        position: position,
+        map: map,
+        icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: markerSize,
+            fillColor: markerColor,
+            fillOpacity: 1,
+            strokeColor: '#ffffff',
+            strokeWeight: 1.5
+        },
+        title: title
+    });
+    
+    routeMarkers.push(marker);
+}
+
+// Function to fetch real route data from API and display with alternating colors
+async function fetchAndDisplayRoute(placeIds) {
+    try {
+        // Build query string for multiple place IDs
+        const queryString = placeIds.map(id => `place_id_list=${encodeURIComponent(id)}`).join('&');
+        const url = `${API_BASE_URL}/route/get_route?${queryString}`;
+        
+        console.log('Fetching route from:', url);
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const routeData = await response.json();
+        console.log('Route data received:', routeData);
+        
+        if (routeData.routes && routeData.routes.length > 0) {
+            const route = routeData.routes[0];
+            
+            // Extract legs data for alternating colors
+            const legsData = route.legs.map(leg => ({
+                encodedPolyline: leg.polyline.encodedPolyline,
+                distanceMeters: leg.distanceMeters,
+                duration: leg.staticDuration
+            }));
+            
+            // Display route with alternating blue and gold colors
+            addMultiplePolylines(legsData);
+            
+            // Display route info
+            displayRouteInfo(route);
+            
+            console.log('Route displayed with alternating FIU colors');
+        } else {
+            console.error('No routes found in response');
+        }
+        
+    } catch (error) {
+        console.error('Error fetching route:', error);
+        // Fallback to sample data
+        addRouteSegments();
+    }
+}
+
+// Function to display route information
+function displayRouteInfo(route) {
+    // Hide route information popup - commented out by user request
+    return;
+    
+    // Create or update route info display
+    let infoDiv = document.getElementById('route-info');
+    if (!infoDiv) {
+        infoDiv = document.createElement('div');
+        infoDiv.id = 'route-info';
+        infoDiv.style.cssText = `
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            font-size: 0.9rem;
+            z-index: 1000;
+            max-width: 200px;
+            border: 1px solid rgba(0, 51, 102, 0.2);
+        `;
+        document.getElementById('map').parentElement.appendChild(infoDiv);
+    }
+    
+    const totalDistance = (route.distanceMeters / 1000).toFixed(1);
+    const totalDuration = Math.round(parseInt(route.duration) / 60);
+    
+    infoDiv.innerHTML = `
+        <div style="font-weight: bold; margin-bottom: 5px; color: #003366;">🗺️ Route Information</div>
+        <div style="margin-bottom: 3px;">Total Distance: ${totalDistance} km</div>
+        <div style="margin-bottom: 3px;">Total Duration: ${totalDuration} minutes</div>
+        <div style="margin-bottom: 5px;">Legs: ${route.legs.length} segments</div>
+        <div style="margin-top: 5px; font-size: 0.8rem; color: #666;">
+            <span style="color: #003366; font-weight: bold;">●</span> Blue segments
+            <span style="margin-left: 10px; color: #B8860B; font-weight: bold;">●</span> Gold segments
+        </div>
+        <div style="margin-top: 3px; font-size: 0.8rem; color: #666;">
+            <span style="color: #27ae60; font-weight: bold;">●</span> Start
+            <span style="margin-left: 10px; color: #e74c3c; font-weight: bold;">●</span> End
+            <span style="margin-left: 10px; color: #95a5a6; font-weight: bold;">●</span> Waypoints
+        </div>
+    `;
+    
+    // Auto-hide after 10 seconds
+    setTimeout(() => {
+        if (infoDiv && infoDiv.parentElement) {
+            infoDiv.style.opacity = '0';
+            setTimeout(() => {
+                if (infoDiv && infoDiv.parentElement) {
+                    infoDiv.remove();
+                }
+            }, 500);
+        }
+    }, 10000);
+}
+
+// Example function to add multiple route segments (fallback)
 function addRouteSegments() {
     const routeData = [
         {
@@ -143,7 +366,7 @@ function addRouteSegments() {
     ];
     
     addMultiplePolylines(routeData);
-    console.log('Added multiple route segments with different colors');
+    console.log('Added multiple route segments with FIU colors');
 }
 
 // User ID Management
@@ -471,7 +694,7 @@ function createCourseItem(courseCode, courseDetails, isCompleted = false) {
     
     courseItem.innerHTML = `
         <input type="checkbox" ${isCompleted ? 'checked' : ''} data-course-code="${courseCode}">
-        <span>${courseCode}<br><small>${courseName} (${courseCredits} credits)</small></span>
+        <span>${courseCode}<br><small>${courseName}<br>(${courseCredits} credits)</small></span>
     `;
     
     console.log('Course item HTML created:', courseItem.innerHTML);
