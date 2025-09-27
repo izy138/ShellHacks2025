@@ -14,7 +14,7 @@ def parse_requisite_string(expr: str) -> List[List[str]]:
         return []
     groups = []
     for g in expr.split(","):
-        g = g.strip()
+        g = g.strip() #HI
         if not g:
             continue
         ors = [o.strip() for o in g.split("|") if o.strip()]
