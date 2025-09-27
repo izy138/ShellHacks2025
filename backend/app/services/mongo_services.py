@@ -41,4 +41,5 @@ async def get_user(user_id: str):
     return serialize_doc(doc)
 
 async def update_user(user_id: str, update_data: dict):
+    update_data.pop('_id', None)  # Remove _id if present
     await db.users.update_one({"user_id": user_id}, {"$set": update_data})
