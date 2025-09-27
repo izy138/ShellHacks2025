@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIU Degree Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 380px;
+            height: 600px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 15px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 1.4rem;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 0.8rem;
+        }
+
+        .tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.9);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px 5px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.75rem;
+            transition: all 0.3s ease;
+            color: #7f8c8d;
+        }
+
+        .tab.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .tab:hover {
+            background: rgba(52, 152, 219, 0.1);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 15px;
+            height: calc(600px - 140px);
+            overflow-y: auto;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .progress-overview {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .progress-card {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-card h3 {
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+
+        .progress-card .number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 3px;
+        }
+
+        .progress-card .subtitle {
+            font-size: 0.7rem;
+            color: #7f8c8d;
+        }
+
+        .course-category {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 4px solid #3498db;
+        }
+
+        .course-category h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .course-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            font-size: 0.8rem;
+        }
+
+        .course-item:last-child {
+            border-bottom: none;
+        }
+
+        .course-checkbox {
+            margin-right: 8px;
+            transform: scale(0.9);
+            accent-color: #27ae60;
+        }
+
+        .course-info {
+            flex: 1;
+        }
+
+        .course-code {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .course-name {
+            color: #7f8c8d;
+            font-size: 0.7rem;
+            margin-top: 1px;
+        }
+
+        .course-credits {
+            color: #3498db;
+            font-weight: 600;
+            font-size: 0.7rem;
+        }
+
+        .completed {
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
+
+        .semester-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 2px dashed #dee2e6;
+        }
+
+        .semester-card h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .schedule-day {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .route-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            font-size: 0.75rem;
+        }
+
+        .route-info:last-child {
+            border-bottom: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.75rem;
+            transition: all 0.3s ease;
+            margin: 3px;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-small {
+            padding: 6px 10px;
+            font-size: 0.7rem;
+            width: auto;
+        }
+
+        .alert {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 15px;
+            font-size: 0.75rem;
+        }
+
+        /* Scrollbar styling */
+        .tab-content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .tab-content::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 2px;
+        }
+
+        .tab-content::-webkit-scrollbar-thumb {
+            background: rgba(52, 152, 219, 0.5);
+            border-radius: 2px;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🎓 FIU Degree Tracker</h1>
+        <p>Computer Science Progress</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('overview')">📊</button>
+        <button class="tab" onclick="switchTab('courses')">📚</button>
+        <button class="tab" onclick="switchTab('planner')">📅</button>
+        <button class="tab" onclick="switchTab('routes')">🗺️</button>
+    </div>
+
+    <div id="overview" class="tab-content active">
+        <div class="progress-overview">
+            <div class="progress-card">
+                <h3>Credits</h3>
+                <div class="number">45</div>
+                <div class="subtitle">of 120 total</div>
+            </div>
+            <div class="progress-card">
+                <h3>GPA</h3>
+                <div class="number">3.6</div>
+                <div class="subtitle">Major: 3.8</div>
+            </div>
+            <div class="progress-card">
+                <h3>Semesters</h3>
+                <div class="number">4</div>
+                <div class="subtitle">remaining</div>
+            </div>
+            <div class="progress-card">
+                <h3>Prerequisites</h3>
+                <div class="number">85%</div>
+                <div class="subtitle">complete</div>
+            </div>
+        </div>
+
+        <div class="alert">
+            <strong>📋 Next Steps:</strong><br>
+            • Complete COP 3530 (Data Structures)<br>
+            • Take CDA 3102 (Computer Architecture)<br>
+            • Plan summer courses for Fall 2026 graduation
+        </div>
+
+        <div class="quick-actions">
+            <button class="btn btn-small" onclick="openRegistration()">🔗 Open PantherSoft</button>
+            <button class="btn btn-small" onclick="syncData()">🔄 Sync Data</button>
+        </div>
+    </div>
+
+    <div id="courses" class="tab-content">
+        <div class="course-category">
+            <h3>🏗️ Foundation</h3>
+            <div class="course-item">
+                <input type="checkbox" class="course-checkbox" checked>
+                <div class="course-info completed">
+                    <div class="course-code">COP 2210</div>
+                    <div class="course-name">Programming I</div>
+                </div>
+                <div class="course-credits">4cr</div>
+            </div>
+            <div class="course-item">
+                <input type="checkbox" class="course-checkbox" checked>
+                <div class="course-info completed">
+                    <div class="course-code">COP 3337</div>
+                    <div class="course-name">Programming II</div>
+                </div>
+                <div class="course-credits">3cr</div>
+            </div>
+            <div class="course-item">
+                <input type="checkbox" class="course-checkbox">
+                <div class="course-info">
+                    <div class="course-code">COP 3530</div>
+                    <div class="course-name">Data Structures</div>
+                </div>
+                <div class="course-credits">3cr</div>
+            </div>
+        </div>
+
+        <div class="course-category">
+            <h3>🔢 Mathematics</h3>
+            <div class="course-item">
+                <input type="checkbox" class="course-checkbox" checked>
+                <div class="course-info completed">
+                    <div class="course-code">MAC 2311</div>
+                    <div class="course-name">Calculus I</div>
+                </div>
+                <div class="course-credits">4cr</div>
+            </div>
+            <div class="course-item">
+                <input type="checkbox" class="course-checkbox" checked>
+                <div class="course-info completed">
+                    <div class="course-code">MAC 2312</div>
+                    <div class="course-name">Calculus II</div>
+                </div>
+                <div class="course-credits">4cr</div>
+            </div>
+        </div>
+
+        <div class="course-category">
+            <h3>🖥️ Systems</h3>
+            <div class="course-item">
+                <input type="checkbox" class="course-checkbox">
+                <div class="course-info">
+                    <div class="course-code">CDA 3102</div>
+                    <div class="course-name">Computer Architecture</div>
+                </div>
+                <div class="course-credits">3cr</div>
+            </div>
+            <div class="course-item">
+                <input type="checkbox" class="course-checkbox">
+                <div class="course-info">
+                    <div class="course-code">COP 4610</div>
+                    <div class="course-name">Operating Systems</div>
+                </div>
+                <div class="course-credits">3cr</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="planner" class="tab-content">
+        <div class="alert">
+            <strong>📚 Available for Spring 2025:</strong><br>
+            Based on completed prerequisites
+        </div>
+
+        <div class="semester-card">
+            <h4>🌸 Spring 2025</h4>
+            <div class="course-item">
+                <div class="course-info">
+                    <div class="course-code">COP 3530</div>
+                    <div class="course-name">Data Structures</div>
+                </div>
+                <div class="course-credits">3cr</div>
+            </div>
+            <div class="course-item">
+                <div class="course-info">
+                    <div class="course-code">COT 3100</div>
+                    <div class="course-name">Discrete Structures</div>
+                </div>
+                <div class="course-credits">3cr</div>
+            </div>
+            <div style="margin-top: 10px; color: #27ae60; font-weight: 600; font-size: 0.8rem;">
+                Total: 6 credits
+            </div>
+        </div>
+
+        <div class="semester-card">
+            <h4>☀️ Summer 2025</h4>
+            <div class="course-item">
+                <div class="course-info">
+                    <div class="course-code">CDA 3102</div>
+                    <div class="course-name">Computer Architecture</div>
+                </div>
+                <div class="course-credits">3cr</div>
+            </div>
+            <div style="margin-top: 10px; color: #27ae60; font-weight: 600; font-size: 0.8rem;">
+                Total: 3 credits
+            </div>
+        </div>
+
+        <button class="btn">💾 Save Plan</button>
+    </div>
+
+    <div id="routes" class="tab-content">
+        <div class="schedule-day">
+            <h4>📅 Monday Route</h4>
+
+            <div class="route-info">
+                <div>
+                    <strong>9:30 AM</strong><br>
+                    <span style="color: #7f8c8d;">COP 3530 - PG6</span>
+                </div>
+                <div style="color: #3498db;">📍 Start</div>
+            </div>
+
+            <div class="route-info">
+                <div>
+                    <strong>11:00 AM</strong><br>
+                    <span style="color: #7f8c8d;">Walk to AHC</span>
+                </div>
+                <div style="color: #e67e22;">🚶‍♂️ 8 min</div>
+            </div>
+
+            <div class="route-info">
+                <div>
+                    <strong>12:30 PM</strong><br>
+                    <span style="color: #7f8c8d;">CAI 4002 - AHC</span>
+                </div>
+                <div style="color: #27ae60;">📍 Class</div>
+            </div>
+        </div>
+
+        <div class="alert">
+            <strong>⚡ Tips:</strong><br>
+            • Total walking: 20 min<br>
+            • Lunch break: 11:30-12:30<br>
+            • Alternative: Green Library parking
+        </div>
+
+        <button class="btn" onclick="openMaps()">🗺️ Open Maps</button>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>
