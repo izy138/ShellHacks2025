@@ -1,5 +1,12 @@
 from app.db import db, serialize_doc
-from app.models import Course, CurrentCourse, Major, User
+from app.models import Course, CurrentCourse, Major, User, Building
+# ----------------- Building -----------------
+async def insert_building(building: Building):
+    await db.buildings.insert_one(building.dict())
+
+async def get_building(code: str):
+    doc = await db.buildings.find_one({"code": code})
+    return serialize_doc(doc)
 
 # ----------------- Course -----------------
 async def insert_course(course: Course):

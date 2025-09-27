@@ -1,14 +1,30 @@
 from fastapi import APIRouter, HTTPException
-from app.models import Course, CurrentCourse, Major, User
+from app.models import Course, CurrentCourse, Major, User, Building
 from app.services.mongo_services import (
     insert_course, get_course,
     insert_current_course, get_current_course,
     insert_major, get_major,
-    insert_user, get_user, update_user
+    insert_user, get_user, update_user,
+    insert_building, get_building
 )
 import google_api
 
 router = APIRouter(prefix="/api")
+
+@router.post("/buildings")
+async def create_building(building: Building):
+    existing = await get_building(building.code)
+    if existing:
+        raise HTTPException(status_code=400, detail="Building with this code already exists")
+    await insert_building(building)
+    return {"status": "success"}
+
+@router.get("/buildings/{code}")
+async def read_building(code: str):
+    building = await get_building(code)
+    if not building:
+        raise HTTPException(status_code=404, detail="Building not found")
+    return building
 
 # ----------------- Courses -----------------
 @router.post("/courses")
