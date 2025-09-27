@@ -39,7 +39,7 @@ def get_route(location_list):
             "https://routes.googleapis.com/directions/v2:computeRoutes",
             headers={
                 "X-Goog-Api-Key": api_key,
-                "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs"
+                "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline"
             },
             json=request
         )
@@ -95,7 +95,7 @@ def get_route_times(location_list):
             "https://routes.googleapis.com/directions/v2:computeRoutes",
             headers={
                 "X-Goog-Api-Key": api_key,
-                "X-Goog-FieldMask": "routes.legs."
+                "X-Goog-FieldMask": "routes.legs.duration"
             },
             json=request
         )
@@ -123,14 +123,14 @@ def get_place_id(address):
     )
 
     url = url_request
-    print(url)
-
+    
     try:
         response = requests.get(url)
 
         if response.status_code == 200:
             places = response.json()
             if places['candidates']:
+                print(places['candidates'][0]['place_id'])
                 return places['candidates'][0]['place_id']
             else:
                 return None
