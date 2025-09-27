@@ -7,7 +7,9 @@ BASE_URL = "http://127.0.0.1:8000/api"
 major_data = {
     "major_id": "COMPSC:BS",
     "name": "Bachelor of Science in Computer Science",
-    "required_courses": ["MAC2311", "MAC2312", "STA3033", "CGS1920", "BSC2010", "BSC2010L", "BSC2011", "BSC2011L", "CSG1920", "ENC3249",  "COP2210", "COT3100", "COP3337", "CSG3095", "CDA3102", "COP4336", "COP3530", "CIS3950", "CEN4010", "COP4610", "CNT4713", "COP4555", "CIS4951"]
+    "required_courses": [
+        "MAC1105", "BSC2010", "BSC2010L", "ENC1101", "ENC1102", "MAC1140", "COP2210", "MAC1114", "MAC2311", "BSC2011", "BSC2011L", "MAC2312", "STA3033", "CGS1920", "COT3100", "ENC3249", "COP3337", "CDA3102", "CGS3095", "CEN4010", "CNT4713", "COP3337", "COP3530", "COP4338", "COP4555", "COP4610", "CIS3950", "CIS4951"
+    ]
 }
 
 # Example course data
@@ -238,7 +240,7 @@ courses_data = [
         "description": "An intermediate level course in Object Oriented programming. Topics include primitive types, control structures, strings arrays, objects and classes, data abstraction inheritance polymorphism and an introduction to data structures. This course will have additional fees.",
         "credits": 3,
         "prereqs": ["COP2210"],
-        "coreqs": ["MAD2104"]
+        "coreqs": ["COP2210"]
     }, {
         "code": "CDA3102",
         "name": "Computer Architecture",
@@ -286,7 +288,7 @@ courses_data = [
         "name": "Data Structures",
         "description": "Basic concepts of data organization, running time of a program, abstract types, data structures including linked lists, nary trees, sets and graphs, internal sorting. This course will have additional fees. Prerequisites: COP 3337 and (MAD 2104 or COT 3100)",
         "credits": 3,
-        "prereqs": ["COP3337", "MAD2104"]
+        "prereqs": ["COP3337", "COT3100"]
     }, {
         "code": "COP3538",
         "name": "Data Structures Fundamentals",

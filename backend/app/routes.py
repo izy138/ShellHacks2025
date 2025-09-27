@@ -1,4 +1,6 @@
+
 from typing import Dict, List
+
 from fastapi import APIRouter, HTTPException, Query
 from app.models import Course, CurrentCourse, Major, User, Location
 from app.services.mongo_services import (
@@ -86,6 +88,7 @@ async def edit_user(user_id: str, update_data: dict):
 
 #----------------- Route Stuff -----------------
 @router.get("/route/get_route")
+
 def get_route_query(place_id_list: List[str] = Query(...)):
     """
     Get route using query parameters.
@@ -113,6 +116,7 @@ def get_route_endpoint(place_ids: str):
         raise HTTPException(status_code=400, detail=f"Invalid JSON format: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing route: {str(e)}")
+
 
 @router.get("/route/get_route_travel_time{class_list_string}")
 def get_route_times(class_list_string: str):
