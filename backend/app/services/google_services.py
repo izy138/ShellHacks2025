@@ -7,10 +7,10 @@ load_dotenv()  # Loads variables from .env
 
 api_key = os.getenv("GOOGLE_API_KEY")
 
-def make_waypoint(loc):
+def make_waypoint(placeId):
     return {"via": False,
             "sideOfRoad": False,
-            "placeId": loc["place_id"]
+            "placeId": placeId
             }
 
 def get_route(location_list):

@@ -2,7 +2,7 @@ from typing import Union
 
 from fastapi import FastAPI
 
-import backend.app.google_api as google_api
+import backend.app.services.google_services as google_api
 
 app = FastAPI()
 
@@ -31,11 +31,8 @@ app = FastAPI()
 '''List of Calls between Backend and Google APIs
 
  - Route - takes a sequence of classes and returns the route between them
- 
 
 '''
-
-
 
 @app.get("/")
 def read_root():
