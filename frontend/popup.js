@@ -357,6 +357,31 @@ async function loadCoursesFromAPI() {
 
     // Add event listeners to new checkboxes
     addCheckboxEventListeners();
+    // After rendering checklist, show yellow warning for completed courses missing prereqs
+    setTimeout(async () => {
+        const userDataReload = await getUserData();
+        const takenCoursesReload = userDataReload.taken_courses || [];
+        document.querySelectorAll('.course-checkbox-item input').forEach(async cb => {
+            if (cb.checked) {
+                const courseItem = cb.closest('.course-checkbox-item');
+                const code = cb.getAttribute('data-course-code');
+                const details = await fetchCourseDetails(code);
+                const prereqsArr = details.prereqs || [];
+                let missing = [];
+                for (const prereq of prereqsArr) {
+                    const opts = prereq.split('|').map(s => s.trim());
+                    if (!opts.some(opt => takenCoursesReload.includes(opt))) {
+                        missing.push(prereq);
+                    }
+                }
+                if (missing.length > 0) {
+                    courseItem.classList.add('prereq-warning');
+                } else {
+                    courseItem.classList.remove('prereq-warning');
+                }
+            }
+        });
+    }, 0);
     updateProgress();
 }
 
@@ -421,6 +446,76 @@ function addCheckboxEventListeners() {
         });
     });
 }
+    function addCheckboxEventListeners() {
+        document.querySelectorAll('.course-checkbox-item input').forEach(checkbox => {
+            checkbox.addEventListener('change', async function () {
+                const item = this.closest('.course-checkbox-item');
+                const courseCode = this.getAttribute('data-course-code');
+
+                // Get course details to check prereqs
+                const courseDetails = await fetchCourseDetails(courseCode);
+                const prereqs = courseDetails.prereqs || [];
+                // Get user's taken courses
+                const userData = await getUserData();
+                const takenCourses = userData.taken_courses || [];
+
+                // Check if all prereqs are completed
+                let missingPrereqs = [];
+                for (const prereq of prereqs) {
+                    // Handle prereq alternatives (e.g. "MAC 1140|MAC 1147")
+                    const options = prereq.split('|').map(s => s.trim());
+                    if (!options.some(opt => takenCourses.includes(opt))) {
+                        missingPrereqs.push(prereq);
+                    }
+                }
+
+                if (this.checked) {
+                    if (missingPrereqs.length > 0) {
+                        item.classList.add('prereq-warning');
+                        alert(`Warning: You have not completed the following prerequisites for ${courseCode}:\n${missingPrereqs.join(', ')}`);
+                    } else {
+                        item.classList.remove('prereq-warning');
+                    }
+                    item.classList.add('completed');
+                    await saveCompletedCourse(courseCode);
+                } else {
+                    item.classList.remove('completed');
+                    item.classList.remove('prereq-warning');
+                    await removeCompletedCourse(courseCode);
+                }
+
+                // After any change, check all courses for prereq status and update warning effect
+                document.querySelectorAll('.course-checkbox-item input').forEach(async cb => {
+                    const courseItem = cb.closest('.course-checkbox-item');
+                    const code = cb.getAttribute('data-course-code');
+                    const details = await fetchCourseDetails(code);
+                    const prereqsArr = details.prereqs || [];
+                    const user = await getUserData();
+                    const takenArr = user.taken_courses || [];
+                    let missing = [];
+                    for (const prereq of prereqsArr) {
+                        const opts = prereq.split('|').map(s => s.trim());
+                        if (!opts.some(opt => takenArr.includes(opt))) {
+                            missing.push(prereq);
+                        }
+                    }
+                    if (cb.checked && missing.length > 0) {
+                        courseItem.classList.add('prereq-warning');
+                    } else {
+                        courseItem.classList.remove('prereq-warning');
+                    }
+                });
+                updateProgress();
+            });
+        });
+    }
+// Add CSS for prereq-warning (red checkbox + yellow background)
+const style = document.createElement('style');
+style.innerHTML = `
+    .prereq-warning input[type=checkbox] { accent-color: red !important; }
+    .prereq-warning { background-color: #fff8b0 !important; border: 2px solid #ffd700 !important; }
+`;
+document.head.appendChild(style);
 
 // Get completed courses from storage
 async function getCompletedCourses() {
