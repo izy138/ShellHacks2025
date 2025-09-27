@@ -2,7 +2,7 @@ from typing import Union
 
 from fastapi import FastAPI
 
-import google_api
+import backend.app.google_api as google_api
 
 app = FastAPI()
 
@@ -34,16 +34,6 @@ app = FastAPI()
  
 
 '''
-@app.get("/route/get_route/{class_list_string}")
-def get_route(class_list_string: str):
-    class_list = class_list_string.split(',')
-    return google_api.get_route(class_list)
-
-@app.get("/route/get_route_travel_time{class_list_string}")
-def get_route_times(class_list_string: str):
-    class_list = class_list_string.split(',')
-    return google_api.get_route_times(class_list)
-
 
 
 

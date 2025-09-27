@@ -7,10 +7,10 @@ load_dotenv()  # Loads variables from .env
 
 api_key = os.getenv("GOOGLE_API_KEY")
 
-def make_waypoint(loc):
+def make_waypoint(place_id):
     return {"via": False,
             "sideOfRoad": False,
-            "placeId": loc["place_id"]
+            "placeId": place_id
             }
 
 def get_route(location_list):
@@ -39,7 +39,7 @@ def get_route(location_list):
             "https://routes.googleapis.com/directions/v2:computeRoutes",
             headers={
                 "X-Goog-Api-Key": api_key,
-                "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline"
+                "X-Goog-FieldMask": "routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.legs.polyline.encodedPolyline,routes.legs.staticDuration,routes.legs.distanceMeters"
             },
             json=request
         )
