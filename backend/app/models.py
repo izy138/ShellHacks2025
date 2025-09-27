@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Dict
 from datetime import time
 
 # ----------------- Course -----------------
@@ -11,18 +11,25 @@ class Course(BaseModel):
     prereqs: List[str] = []
     coreqs: List[str] = []
 
-# ----------------- Building -----------------
-class Building(BaseModel):
+# ----------------- Location -----------------
+class Location(BaseModel):
     code: str
     full_name: str
     address: str
     google_maps_place_id: str
 
-# ----------------- CurrentCourse -----------------
-class CurrentCourse(Course):
+# ----------------- Schedule -----------------
+class Block(BaseModel):
     start_time: time
     end_time: time
-    location: Building 
+    location: Location
+
+class Schedule(BaseModel):
+    blocks: Dict[str, List[Block]]
+
+# ----------------- CurrentCourse -----------------
+class CurrentCourse(Course):
+    schedule: Schedule
     professor: str
 
 
@@ -35,7 +42,7 @@ class Major(BaseModel):
 # ----------------- User -----------------
 class User(BaseModel):
     user_id: str
-    blocked_time: dict = {}  # e.g., {"day": "Mon", "time": "10:00-12:00"}
+    blocked_time: Schedule
     major: str
     taken_courses: List[str] = []  # list of course codes
     current_courses: List[CurrentCourse] = []

@@ -3,7 +3,7 @@ import requests
 import os
 from dotenv import load_dotenv
 
-import app.google_api as google_api
+import app.services.google_services as google_services
 
 load_dotenv()  # Loads variables from .env
 
@@ -47,7 +47,7 @@ def main():
     # route_info = google_api.get_route([{"place_id": "ChIJbWv74i-_2YgRqsagPWgY2Qs"}, {"place_id": "ChIJh1r4NS6_2YgR-jjbTyCaHZI"}])
     # print (route_info)
     print()
-    print(google_api.get_route([
+    print(google_services.get_route([
         {"place_id": "ChIJo6bEHZq_2YgRGzXukZLjhIs"},
         {"place_id": "ChIJhQ84ooC_2YgRwg5aW-ElL28"},
         {"place_id": "ChIJxZbHujq_2YgRdqaxvf4LcBQ"}

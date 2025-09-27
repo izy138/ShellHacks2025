@@ -1,30 +1,33 @@
+from typing import Dict
 from fastapi import APIRouter, HTTPException
-from app.models import Course, CurrentCourse, Major, User, Building
+from app.models import Course, CurrentCourse, Major, User, Location
 from app.services.mongo_services import (
     insert_course, get_course,
     insert_current_course, get_current_course,
     insert_major, get_major,
     insert_user, get_user, update_user,
-    insert_building, get_building
+    insert_location, get_location
 )
-import google_api
+from app.services.google_services import (
+    get_route, get_route_times
+)
 
 router = APIRouter(prefix="/api")
 
-@router.post("/buildings")
-async def create_building(building: Building):
-    existing = await get_building(building.code)
+@router.post("/locations")
+async def create_location(location: Location):
+    existing = await get_location(location.code)
     if existing:
-        raise HTTPException(status_code=400, detail="Building with this code already exists")
-    await insert_building(building)
+        raise HTTPException(status_code=400, detail="location with this code already exists")
+    await insert_location(location)
     return {"status": "success"}
 
-@router.get("/buildings/{code}")
-async def read_building(code: str):
-    building = await get_building(code)
-    if not building:
-        raise HTTPException(status_code=404, detail="Building not found")
-    return building
+@router.get("/locations/{code}")
+async def read_location(code: str):
+    location = await get_location(code)
+    if not location:
+        raise HTTPException(status_code=404, detail="location not found")
+    return location
 
 # ----------------- Courses -----------------
 @router.post("/courses")
@@ -81,12 +84,11 @@ async def edit_user(user_id: str, update_data: dict):
 
 
 #----------------- Route Stuff -----------------
-@router.get("/route/get_route/{class_id_list}")
-def get_route(class_list_string: str):
-    class_list = class_list_string.split(',')
-    return google_api.get_route(class_list)
+@router.get("/route/get_route/{place_ids}")
+def get_route(place_id_list: list[Dict]):
+    return get_route(place_id_list)
 
 @router.get("/route/get_route_travel_time{class_list_string}")
 def get_route_times(class_list_string: str):
     class_list = class_list_string.split(',')
-    return google_api.get_route_times(class_list)
+    return get_route_times(class_list)
