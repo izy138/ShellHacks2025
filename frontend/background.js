@@ -3,16 +3,32 @@
 // Installation and setup
 chrome.runtime.onInstalled.addListener(function (details) {
     console.log('FIU Degree Tracker installed');
-    
+
     if (details.reason === 'install') {
-        // Initialize with empty data - let API populate it
-        chrome.storage.sync.set({
-            completedCourses: [],
-            lastSync: null
-        });
-        console.log('Extension initialized');
+        // First time installation
+        initializeExtension();
     }
 });
+
+// Initialize extension with default data
+function initializeExtension() {
+    const defaultData = {
+        completedCourses: [
+            'COP 2210', // Programming I
+            'COP 3337', // Programming II  
+            'MAC 2311', // Calculus I
+            'MAC 2312', // Calculus II
+            'STA 3033'  // Probability & Statistics
+        ],
+        currentSemester: 'Fall 2025',
+        major: 'Computer Science',
+        graduationGoal: 'Fall 2026',
+        lastSync: null
+    };
+
+    chrome.storage.sync.set(defaultData);
+    console.log('Extension initialized with default data');
+}
 
 // Handle messages from content scripts and popup
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
@@ -24,6 +40,15 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
             break;
         case 'transcriptDataFound':
             handleTranscriptDataSync(request.data);
+            break;
+        case 'openPopup':
+            chrome.action.openPopup();
+            break;
+        case 'scheduleNotification':
+            scheduleClassReminder(request.classInfo);
+            break;
+        case 'updateProgress':
+            updateProgressData(request.progressData);
             break;
     }
 
@@ -102,7 +127,7 @@ function calculateGPA(transcriptData) {
 function updateBadge() {
     chrome.storage.sync.get(['completedCourses'], function (result) {
         const completed = result.completedCourses || [];
-        const totalRequired = 40; // Adjust based on your major requirements
+        const totalRequired = 40;
         const percentage = Math.floor((completed.length / totalRequired) * 100);
 
         chrome.action.setBadgeText({
@@ -125,6 +150,47 @@ function showNotification(message) {
     });
 }
 
+// Schedule class reminders
+function scheduleClassReminder(classInfo) {
+    const { courseName, time, location } = classInfo;
+    const reminderTime = new Date(time);
+    reminderTime.setMinutes(reminderTime.getMinutes() - 15);
+
+    chrome.alarms.create(`class-${courseName}`, {
+        when: reminderTime.getTime()
+    });
+
+    console.log(`Scheduled reminder for ${courseName} at ${reminderTime}`);
+}
+
+// Handle alarms (class reminders)
+chrome.alarms.onAlarm.addListener(function (alarm) {
+    if (alarm.name.startsWith('class-')) {
+        const courseName = alarm.name.replace('class-', '');
+
+        chrome.notifications.create({
+            type: 'basic',
+            iconUrl: 'icons/icon48.png',
+            title: 'Class Reminder',
+            message: `${courseName} starts in 15 minutes!`,
+            buttons: [
+                { title: 'View Route' },
+                { title: 'Dismiss' }
+            ]
+        });
+    }
+});
+
+// Handle notification button clicks
+chrome.notifications.onButtonClicked.addListener(function (notificationId, buttonIndex) {
+    if (buttonIndex === 0) {
+        chrome.tabs.create({
+            url: 'https://www.google.com/maps/search/fiu+miami'
+        });
+    }
+    chrome.notifications.clear(notificationId);
+});
+
 // Monitor tab updates to detect FIU websites
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
     if (changeInfo.status === 'complete' && tab.url) {
@@ -142,6 +208,65 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
         }
     }
 });
+
+// Periodic data sync
+chrome.alarms.create('periodicSync', { periodInMinutes: 60 });
+
+chrome.alarms.onAlarm.addListener(function (alarm) {
+    if (alarm.name === 'periodicSync') {
+        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+            if (tabs[0] && tabs[0].url && tabs[0].url.includes('fiu.edu')) {
+                chrome.tabs.sendMessage(tabs[0].id, { action: 'autoSync' });
+            }
+        });
+    }
+});
+
+// Context menu integration
+chrome.runtime.onInstalled.addListener(function () {
+    chrome.contextMenus.create({
+        id: 'searchCourse',
+        title: 'Search course: "%s"',
+        contexts: ['selection']
+    });
+
+    chrome.contextMenus.create({
+        id: 'addToPlan',
+        title: 'Add to degree plan',
+        contexts: ['selection']
+    });
+});
+
+// Handle context menu clicks
+chrome.contextMenus.onClicked.addListener(function (info, tab) {
+    if (info.menuItemId === 'searchCourse') {
+        const courseQuery = info.selectionText;
+        chrome.tabs.create({
+            url: `https://panthersoft.fiu.edu/search?q=${encodeURIComponent(courseQuery)}`
+        });
+    }
+
+    if (info.menuItemId === 'addToPlan') {
+        const courseCode = info.selectionText.match(/[A-Z]{3}\s?\d{4}/);
+        if (courseCode) {
+            chrome.storage.sync.get(['plannedCourses'], function (result) {
+                const planned = result.plannedCourses || [];
+                planned.push(courseCode[0]);
+                chrome.storage.sync.set({ plannedCourses: planned });
+                showNotification(`Added ${courseCode[0]} to degree plan`);
+            });
+        }
+    }
+});
+
+// Update progress data
+function updateProgressData(progressData) {
+    chrome.storage.sync.set({
+        progressData: progressData,
+        lastUpdated: new Date().toISOString()
+    });
+    updateBadge();
+}
 
 // Initialize badge on startup
 updateBadge();
