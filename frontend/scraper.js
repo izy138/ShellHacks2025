@@ -37,8 +37,62 @@ function scrapeSubjectRows() {
 }
 
 function formatScrapedRows(infoArray) {
-    // Format Class Code
-    
-    newClass
 
-}
+    function getTextPastNthSpace(str,n) {
+        const parts = str.split(' ');
+        if (parts.length <= n) return '';
+        return parts.slice(2).join(' ');
+    }
+    // Format Class Code
+    formatArray = []
+
+    for (let i = 0; i < infoArray.length; i++) {
+        
+        const classText = infoArray[i].class;
+        ClassCode = classText.split(" ")[0] + classText.split(" ")[1]
+        ClassName = getTextPastNthSpace(classText,2)
+        
+        if (infoArray[i].days.includes("To Be Announced")) {
+            classDay = null
+            classStartTime = null
+            classEndTime = null
+        } else {
+            classDay = getTextPastNthSpace(infoArray[i].days,1)
+            classStartTime = infoArray[i].time.split(" ")[1]
+            classEndTime = infoArray[i].time.split(" ")[3]
+        } 
+
+        if (infoArray[i].room.includes("Online Course")){
+            classBuilding = null
+            classRoom = null
+        } else{
+            
+            const parts = infoArray[i].room.split(' ');
+            if (parts.length < 2) { 
+                classBuilding = infoArray[i].room;
+                classRoom = null; 
+             }else{
+                classRoom = parts[parts.length - 1];
+                classBuilding = parts.slice(0, parts.length - 1).join(' ');
+             }
+            
+        }
+
+        newFormatted = {
+            classDay: classDay,
+            classStartTime: classStartTime,
+            classEndTime: classEndTime,
+            classBuilding: classBuilding,
+            classRoom: classRoom,
+            classCode: ClassCode,
+            className: ClassName
+        }
+
+        formatArray.push(newFormatted)
+
+    }
+
+    return formatArray
+
+} 
+
