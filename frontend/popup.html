@@ -4,8 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FIU Degree Tracker</title>
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDaK8v3R7sOR-yXymcDVsgQVX2-U8pgJR0&libraries=geometry"></script>
+    <title>FIU Panther Planner</title>
+    <script src="config.js"></script>
+    <script>
+        // Load Google Maps API with key from config
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${CONFIG.GOOGLE_MAPS_API_KEY}&libraries=geometry`;
+        document.head.appendChild(script);
+    </script>
     <style>
         * {
             margin: 0;
@@ -15,7 +21,7 @@
 
         body {
             width: 430px;
-            height: 740px;
+            height: 755px;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #333;
@@ -26,6 +32,7 @@
             top: 0;
             right: 0;
             z-index: 9999;
+            border: 2px solid #013677;
         }
 
         .container {
@@ -39,17 +46,33 @@
         }
 
         .header {
-            background: rgba(255, 255, 255, 0.95);
+            background: url('icons/banner.png') center/cover no-repeat;
             backdrop-filter: blur(10px);
-            padding: 8px 15px;
+            padding: 20px 15px;
             text-align: center;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            z-index: -1;
         }
 
         .header h1 {
-            color: #2c3e50;
+            color: #ffffff;
             font-size: 1.1rem;
             margin-bottom: 2px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+            position: relative;
+            z-index: 1;
         }
 
         .header p {
@@ -92,27 +115,55 @@
         }
 
         .ai-agent-section {
-            background: linear-gradient(135deg, #66eaa6, #4b54a2);
+            background: #013677;
             color: white;
             padding: 15px;
             border-radius: 12px;
-            margin-bottom: 20px;
-            height: 180px;
-            min-height: 180px;
-            max-height: 180px;
+            margin-bottom: 10px;
             width: 100%;
             min-width: 400px;
             max-width: 400px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
             flex-shrink: 0;
             box-sizing: border-box;
+            transition: all 0.3s ease;
         }
 
-        .ai-agent-section h3 {
-            margin-bottom: 10px;
+        .ai-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            margin-bottom: 5px;
+        }
+
+        .ai-header h3 {
+            margin: 0;
             font-size: 1rem;
+            color: #f3a806;
+            font-weight: 700;
+        }
+
+        .ai-arrow {
+            font-size: 1.2rem;
+            color: #f3a806;
+            transition: transform 0.3s ease;
+        }
+
+        .ai-arrow.rotated {
+            transform: rotate(180deg);
+        }
+
+        .ai-content {
+            max-height: 160px;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .ai-content.collapsed {
+            max-height: 0;
+            padding: 0;
         }
 
         .ai-input {
@@ -129,9 +180,9 @@
         }
 
         .ai-button {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: #fbe099;
+            color: #1e40af;
+            border: 1px solid rgba(30, 64, 175, 0.5);
             padding: 6px 12px;
             border-radius: 6px;
             cursor: pointer;
@@ -142,10 +193,13 @@
             min-height: 32px;
             max-height: 32px;
             flex-shrink: 0;
+            font-weight: 600;
         }
 
         .ai-button:hover {
-            background: rgba(255, 255, 255, 0.3);
+            background: #eab42c;
+            border-color: #1e40af;
+            color: #1d4ed8;
         }
 
         .prompt-templates {
@@ -169,24 +223,31 @@
             max-width: 180px;
             padding: 8px 10px;
             border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, .6);
-            background: rgba(255, 255, 255, .25);
-            color: #fff;
-            /* matches your purple bg */
+            border: 2px solid #1e40af;
+            background: #ffc13c;
+            color: #1e40af;
             font-weight: 600;
             cursor: pointer;
             flex-shrink: 0;
             box-sizing: border-box;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .prompt-btn:hover {
-            background: rgba(255, 255, 255, .35);
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border-color: #1d4ed8;
+            color: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(30, 64, 175, 0.3);
         }
 
         .dropdown-section {
-            background: #f8f9fa;
-            border: 2px solid #e9ecef;
+            background: #ffdb8c;
+            border: 2px solid #013677;
             border-radius: 8px;
             margin-bottom: 15px;
             overflow: hidden;
@@ -199,27 +260,27 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: white;
+            background: transparent;
             transition: all 0.3s ease;
         }
 
         .dropdown-header:hover {
-            background: #f0f8ff;
+            background: rgba(119, 78, 1, 0.1);
         }
 
         .dropdown-header.active {
-            background: #e8f4f8;
-            border-bottom: 1px solid #e0e0e0;
+            background: rgba(247, 178, 4, 0.541);
+            border-bottom: 1px solid #013677;
         }
 
         .dropdown-title {
-            color: #2c3e50;
+            color: #000000;
             font-size: 0.95rem;
             font-weight: 600;
         }
 
         .dropdown-subtitle {
-            color: #7f8c8d;
+            color: #000000;
             font-size: 0.75rem;
             margin-top: 2px;
         }
@@ -360,8 +421,8 @@
 
         /* Progress Tracking Styles */
         .progress-stats {
-            background: linear-gradient(135deg, #27ae60, #2ecc71);
-            color: white;
+            background: #013677;
+            color: #f3a806;
             padding: 12px;
             border-radius: 6px;
             text-align: center;
@@ -533,8 +594,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎓 FIU Degree Tracker</h1>
-            <p>Computer Science Progress</p>
+            <h1>🎓 FIU Panther Planner</h1>
+            <!-- <p>Computer Science Progress</p> -->
         </div>
 
         <div class="content">
@@ -553,21 +614,26 @@
 
             <!-- AI Agent Section -->
             <div class="ai-agent-section">
-                <h3>🤖 Ask Roary</h3>
-                <input type="text" class="ai-input" placeholder="Ask about courses, prerequisites, or planning...">
-
-                <!-- Prompt templates container -->
-                <div class="prompt-templates">
-                    <button class="prompt-btn" id="next-courses-btn">
-                        What should I take next?
-                    </button>
-
-                    <button class="prompt-btn" id="course-requirements-btn">
-                        Course requirements
-                    </button>
+                <div class="ai-header" id="ai-header">
+                    <h3><img src="icons/fiu_panther.png" alt="FIU Panther" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 5px;"> Ask Roary</h3>
+                    <div class="ai-arrow" id="ai-arrow">▼</div>
                 </div>
+                <div class="ai-content" id="ai-content">
+                    <input type="text" class="ai-input" placeholder="Ask about courses, prerequisites, or planning...">
 
-                <button class="ai-button">Ask AI</button>
+                    <!-- Prompt templates container -->
+                    <div class="prompt-templates">
+                        <button class="prompt-btn" id="next-courses-btn">
+                            What should I take next?
+                        </button>
+
+                        <button class="prompt-btn" id="course-requirements-btn">
+                            Course requirements
+                        </button>
+                    </div>
+
+                    <button class="ai-button">Ask AI</button>
+                </div>
             </div>
 
             <!-- Class Checklist / Class Planner Dropdown -->

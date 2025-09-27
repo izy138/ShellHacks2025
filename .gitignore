@@ -31,3 +31,10 @@ build/
 # Tools
 coverage/
 .cache/
+
+# API Keys and sensitive data
+config.js
+config/api-keys.js
+config/secrets.js
+*.key
+api-keys.txt
