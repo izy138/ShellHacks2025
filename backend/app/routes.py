@@ -1,5 +1,5 @@
-from typing import Dict
-from fastapi import APIRouter, HTTPException
+from typing import Dict, List
+from fastapi import APIRouter, HTTPException, Query
 from app.models import Course, CurrentCourse, Major, User, Location
 from app.services.mongo_services import (
     insert_course, get_course,
@@ -84,9 +84,36 @@ async def edit_user(user_id: str, update_data: dict):
 
 
 #----------------- Route Stuff -----------------
+@router.get("/route/get_route")
+def get_route_query(place_id_list: List[str] = Query(...)):
+    """
+    Get route using query parameters.
+    Usage: /api/route/get_route?place_id_list=id1&place_id_list=id2&place_id_list=id3
+    """
+    try:
+        # Convert list of place_id strings to list of dicts
+        place_ids = [{"place_id": pid} for pid in place_id_list]
+        from app.services.google_services import get_route
+        return get_route(place_ids)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing route: {str(e)}")
+
 @router.get("/route/get_route/{place_ids}")
-def get_route(place_id_list: list[Dict]):
-    return get_route(place_id_list)
+def get_route_endpoint(place_ids: str):
+    """
+    Get route using path parameter with JSON string.
+    Usage: /api/route/get_route/[{"place_id":"id1"},{"place_id":"id2"}]
+    """
+    import json
+    try:
+        # Decode URL-encoded JSON string
+        place_id_list = json.loads(place_ids)
+        from app.services.google_services import get_route
+        return get_route(place_id_list)
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON format: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing route: {str(e)}")
 
 @router.get("/route/get_route_travel_time{class_list_string}")
 def get_route_times(class_list_string: str):
