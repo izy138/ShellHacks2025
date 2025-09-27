@@ -15,7 +15,7 @@ class Course(BaseModel):
 class Building(BaseModel):
     code: str
     full_name: str
-    adress: str
+    address: str
     google_maps_place_id: str
 
 # ----------------- CurrentCourse -----------------
