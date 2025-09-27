@@ -8,7 +8,6 @@ class Course(BaseModel):
     name: str
     description: Optional[str] = None
     credits: int
-    is_taken: bool = False
     prereqs: List[str] = []
     coreqs: List[str] = []
 
@@ -23,12 +22,12 @@ class CurrentCourse(Course):
 class Major(BaseModel):
     major_id: str
     name: str
-    required_courses: List[Course] = []
+    required_courses: List[str] = []
 
 # ----------------- User -----------------
 class User(BaseModel):
     user_id: str
     blocked_time: dict = {}  # e.g., {"day": "Mon", "time": "10:00-12:00"}
     major: str
-    taken_classes: List[str] = []  # list of course codes
+    taken_courses: List[str] = []  # list of course codes
     current_courses: List[CurrentCourse] = []
