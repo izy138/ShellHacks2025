@@ -140,5 +140,7 @@ def get_place_id(address):
     except requests.exceptions.RequestException as e:
         print('Error:', e)
         return None
+    
+
 
 
