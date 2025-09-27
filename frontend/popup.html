@@ -13,73 +13,65 @@
         }
 
         body {
-            width: 400px;
-            height: 600px;
+            width: 30vw;
+            height: 100vh;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #333;
             overflow-x: hidden;
-            margin: 0;
-            padding: 0;
+            min-width: 450px;
         }
 
         .container {
-            width: 100%;
-            height: 100%;
+            height: 100vh;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             overflow-y: auto;
-            display: flex;
-            flex-direction: column;
         }
 
         .header {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            padding: 12px 15px;
+            padding: 20px 15px;
             text-align: center;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .header h1 {
             color: #2c3e50;
-            font-size: 1.1rem;
-            margin-bottom: 3px;
+            font-size: 1.4rem;
+            margin-bottom: 5px;
         }
 
         .header p {
             color: #7f8c8d;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
         }
 
         .content {
             padding: 15px;
-            flex: 1;
-            overflow-y: auto;
         }
 
         .major-selector {
-            margin-top: -5px;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
         }
 
         .major-selector label {
             display: block;
             font-weight: 600;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             color: #2c3e50;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
         }
 
         .major-dropdown {
             width: 100%;
-            padding: 6px 10px;
+            padding: 10px;
             border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 13px;
+            border-radius: 8px;
+            font-size: 14px;
             background: white;
             cursor: pointer;
-            height: 32px;
         }
 
         .major-dropdown:focus {
@@ -90,40 +82,33 @@
         .ai-agent-section {
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            padding: 20px;
+            padding: 15px;
             border-radius: 12px;
             margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
 
         .ai-agent-section h3 {
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-            font-weight: 600;
+            margin-bottom: 10px;
+            font-size: 1rem;
         }
 
         .ai-input {
             width: 100%;
-            padding: 12px 15px;
+            padding: 8px 12px;
             border: none;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            font-size: 14px;
-            min-height: 60px;
-            resize: vertical;
-            font-family: inherit;
-            line-height: 1.4;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            font-size: 13px;
         }
 
         .ai-button {
-            background: rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.2);
             color: white;
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            padding: 10px 15px;
-            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 6px 12px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 12px;
             transition: all 0.3s ease;
             width: 100%;
         }
@@ -131,6 +116,25 @@
         .ai-button:hover {
             background: rgba(255, 255, 255, 0.3);
         }
+
+        .prompt-templates {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0 12px;
+            flex-wrap: wrap;             /* wraps nicely on small screens */
+        }
+        .prompt-btn {
+            flex: 1 1 48%;               /* two per row */
+            min-width: 180px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,.6);
+            background: rgba(255,255,255,.25);
+            color: #fff;                 /* matches your purple bg */
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .prompt-btn:hover { background: rgba(255,255,255,.35); }
 
         .dropdown-section {
             background: #f8f9fa;
@@ -535,9 +539,23 @@
 
             <!-- AI Agent Section -->
             <div class="ai-agent-section">
-                <h3>🤖 AI Agent</h3>
-                <textarea class="ai-input" placeholder="Ask about courses, prerequisites, or planning..." rows="3"></textarea>
-                <button class="ai-button">Ask AI</button>
+            <h3>🤖 AI Agent</h3>
+            <input type="text" class="ai-input" placeholder="Ask about courses, prerequisites, or planning...">
+
+            <!-- Prompt templates container -->
+            <div class="prompt-templates">
+                <button class="prompt-btn"
+                onclick="document.querySelector('.ai-input').value=`Given the courses I've completed ({{completedCourses}}), what courses should I take next to stay on track for graduation?`">
+                What should I take next?
+                </button>
+
+                <button class="prompt-btn"
+                onclick="document.querySelector('.ai-input').value=`What are the requirements for {{courseCode}}? Include prerequisites and corequisites.`">
+                Course requirements
+                </button>
+            </div>
+
+            <button class="ai-button">Ask AI</button>
             </div>
 
             <!-- Class Checklist / Class Planner Dropdown -->
@@ -911,7 +929,7 @@
                             <div class="route-status">📍 Class</div>
                         </div>
 
-                        <button class="map-button" onclick="openMaps()">🗺️ Open in Google Maps</button>
+                        <button class="map-button">🗺️ Open in Google Maps</button>
                     </div>
                 </div>
             </div>
@@ -954,7 +972,59 @@
         </div>
     </div>
 
-    <script src="popup.js"></script>
+    <script>
+        function toggleDropdown(sectionName) {
+            const content = document.getElementById(sectionName + '-content');
+            const arrow = document.getElementById(sectionName + '-arrow');
+            const header = arrow.parentElement;
+
+            const isExpanded = content.classList.contains('expanded');
+
+            if (isExpanded) {
+                // Collapse
+                content.classList.remove('expanded');
+                arrow.classList.remove('rotated');
+                header.classList.remove('active');
+            } else {
+                // Expand
+                content.classList.add('expanded');
+                arrow.classList.add('rotated');
+                header.classList.add('active');
+            }
+        }
+
+        // Course checkbox functionality
+        document.querySelectorAll('.course-checkbox-item input').forEach(checkbox => {
+            checkbox.addEventListener('change', function () {
+                const item = this.closest('.course-checkbox-item');
+                if (this.checked) {
+                    item.classList.add('completed');
+                } else {
+                    item.classList.remove('completed');
+                }
+                updateProgress();
+            });
+        });
+
+        function updateProgress() {
+            const total = document.querySelectorAll('.course-checkbox-item').length;
+            const completed = document.querySelectorAll('.course-checkbox-item.completed').length;
+            const percentage = Math.floor((completed / total) * 100);
+
+            // Update progress displays
+            console.log(`Progress: ${completed}/${total} (${percentage}%)`);
+        }
+
+        // AI Agent functionality
+        document.querySelector('.ai-button').addEventListener('click', function () {
+            const input = document.querySelector('.ai-input');
+            const query = input.value.trim();
+            if (query) {
+                alert(`AI: Looking up information about "${query}"...`);
+                input.value = '';
+            }
+        });
+    </script>
 </body>
 
 </html>
