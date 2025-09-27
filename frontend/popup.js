@@ -305,8 +305,10 @@ async function loadCoursesFromAPI() {
     courseGrid.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">Loading courses from API...</div>';
 
     let majorData;
+    let userData;
     try {
         majorData = await fetchMajorCourses();
+        userData = await getUserData();
         console.log('Major data received:', majorData);
         if (!majorData) {
             console.log('No major data, showing fallback courses');
@@ -322,8 +324,8 @@ async function loadCoursesFromAPI() {
     // Clear loading indicator
     courseGrid.innerHTML = '';
 
-    // Load completed courses from storage
-    const completedCourses = await getCompletedCourses();
+    // Use user.taken_courses for completed courses
+    const completedCourses = userData.taken_courses || [];
 
     // Create course items from API data
     console.log('Checking majorData.required_courses:', majorData.required_courses);
