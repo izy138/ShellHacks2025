@@ -382,6 +382,23 @@ async function loadCoursesFromAPI() {
             }
         });
     }, 0);
+
+    // Add search/filter functionality for checklist
+    const filterInput = document.querySelector('.filter-input');
+    if (filterInput) {
+        filterInput.addEventListener('input', function () {
+            const query = this.value.trim().toLowerCase();
+            document.querySelectorAll('.course-checkbox-item').forEach(item => {
+                const code = item.querySelector('input').getAttribute('data-course-code').toLowerCase();
+                const name = item.querySelector('span').textContent.toLowerCase();
+                if (code.includes(query) || name.includes(query)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    }
     updateProgress();
 }
 
