@@ -1,11 +1,68 @@
 // Fetch all majors from API
+// Generic cache utility
+function getCachedData(key) {
+    const cached = localStorage.getItem(key);
+    if (!cached) return null;
+    try {
+        const { data, timestamp } = JSON.parse(cached);
+        // 1 hour cache expiration
+        if (Date.now() - timestamp < 3600 * 1000) {
+            return data;
+        }
+    } catch (e) {}
+    return null;
+}
+
+function setCachedData(key, data) {
+    localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }));
+}
+
 async function fetchAllMajors() {
+    const cacheKey = 'majorsCache';
+    const cachedMajors = getCachedData(cacheKey);
+    if (cachedMajors) return cachedMajors;
     try {
         const response = await fetch(`${API_BASE_URL}/majors`);
         if (!response.ok) throw new Error('Failed to fetch majors');
-        return await response.json();
+        const majors = await response.json();
+        setCachedData(cacheKey, majors);
+        return majors;
     } catch (error) {
         console.error('Error fetching all majors:', error);
+        return [];
+    }
+}
+
+// Fetch all courses from API (with cache)
+async function fetchAllCourses() {
+    const cacheKey = 'coursesCache';
+    const cachedCourses = getCachedData(cacheKey);
+    if (cachedCourses) return cachedCourses;
+    try {
+        const response = await fetch(`${API_BASE_URL}/courses`);
+        if (!response.ok) throw new Error('Failed to fetch courses');
+        const courses = await response.json();
+        setCachedData(cacheKey, courses);
+        return courses;
+    } catch (error) {
+        console.error('Error fetching all courses:', error);
+        return [];
+    }
+}
+
+// Fetch all locations from API (with cache)
+async function fetchAllLocations() {
+    const cacheKey = 'locationsCache';
+    const cachedLocations = getCachedData(cacheKey);
+    if (cachedLocations) return cachedLocations;
+    try {
+        const response = await fetch(`${API_BASE_URL}/locations`);
+        if (!response.ok) throw new Error('Failed to fetch locations');
+        const locations = await response.json();
+        setCachedData(cacheKey, locations);
+        return locations;
+    } catch (error) {
+        console.error('Error fetching all locations:', error);
         return [];
     }
 }
@@ -507,41 +564,53 @@ async function fetchMajorCourses(majorId) {
 
 async function fetchCourseDetails(courseCode) {
     console.log('fetchCourseDetails called for:', courseCode);
-    
+    // Use and update course cache
+    const cacheKey = 'coursesCache';
+    let courseCache = getCachedData(cacheKey) || {};
+    if (courseCache[courseCode]) {
+        console.log('Returning cached course for', courseCode);
+        return courseCache[courseCode];
+    }
     const url = `${API_BASE_URL}/courses/${encodeURIComponent(courseCode)}`;
     console.log('Fetching course from URL:', url);
-    
     try {
         const response = await fetch(url);
         console.log('Course response for', courseCode, ':', response.status);
-        
         if (!response.ok) {
             if (response.status === 404) {
                 console.log('Course not found, returning basic info for:', courseCode);
                 // Course not found, return basic info
-                return {
+                const basicInfo = {
                     code: courseCode,
                     name: courseCode,
                     credits: 3,
                     prereqs: [],
                     coreqs: []
                 };
+                courseCache[courseCode] = basicInfo;
+                setCachedData(cacheKey, courseCache);
+                return basicInfo;
             }
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const courseData = await response.json();
         console.log('Course data for', courseCode, ':', courseData);
+        courseCache[courseCode] = courseData;
+        setCachedData(cacheKey, courseCache);
         return courseData;
     } catch (error) {
         console.error(`Error fetching course ${courseCode}:`, error);
         // Return basic course info as fallback
-        return {
+        const fallback = {
             code: courseCode,
             name: courseCode,
             credits: 3,
             prereqs: [],
             coreqs: []
         };
+        courseCache[courseCode] = fallback;
+        setCachedData(cacheKey, courseCache);
+        return fallback;
     }
 }
 
