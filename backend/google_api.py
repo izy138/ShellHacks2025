@@ -111,5 +111,34 @@ def get_route_times(location_list):
         print('Error:', e)
         return None
 
+def get_place_id(address):
+    if not api_key:
+        raise ValueError("GOOGLE_API_KEY environment variable is not set.")
+
+    url_request = (
+        "https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input="
+        + address
+        + "&inputtype=textquery&fields=place_id&key="
+        + api_key
+    )
+
+    url = url_request
+    print(url)
+
+    try:
+        response = requests.get(url)
+
+        if response.status_code == 200:
+            places = response.json()
+            if places['candidates']:
+                return places['candidates'][0]['place_id']
+            else:
+                return None
+        else:
+            print('Error:', response.status_code)
+            return None
+    except requests.exceptions.RequestException as e:
+        print('Error:', e)
+        return None
 
 
