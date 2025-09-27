@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FIU Degree Tracker</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDaK8v3R7sOR-yXymcDVsgQVX2-U8pgJR0&libraries=geometry"></script>
     <style>
         * {
             margin: 0;
@@ -440,6 +441,63 @@
             color: #666;
             font-style: italic;
         }
+
+        /* Schedule Calendar Styles */
+        .schedule-calendar {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .day-column {
+            text-align: center;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: #f8f9fa;
+        }
+
+        .day-header {
+            background: #667eea;
+            color: white;
+            padding: 8px 4px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .day-content {
+            padding: 8px 4px;
+            min-height: 80px;
+        }
+
+        .schedule-item {
+            margin-bottom: 4px;
+            padding: 4px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+
+        .schedule-item.class {
+            background: #e8f4f8;
+            color: #2c3e50;
+            border: 1px solid #3498db;
+        }
+
+        .schedule-item.free {
+            background: #f0f0f0;
+            color: #7f8c8d;
+            font-style: italic;
+        }
     </style>
 </head>
 
@@ -471,13 +529,11 @@
 
                 <!-- Prompt templates container -->
                 <div class="prompt-templates">
-                    <button class="prompt-btn"
-                        onclick="document.querySelector('.ai-input').value=`Given the courses I've completed ({{completedCourses}}), what courses should I take next to stay on track for graduation?`">
+                    <button class="prompt-btn" id="next-courses-btn">
                         What should I take next?
                     </button>
 
-                    <button class="prompt-btn"
-                        onclick="document.querySelector('.ai-input').value=`What are the requirements for {{courseCode}}? Include prerequisites and corequisites.`">
+                    <button class="prompt-btn" id="course-requirements-btn">
                         Course requirements
                     </button>
                 </div>
@@ -487,7 +543,7 @@
 
             <!-- Class Checklist / Class Planner Dropdown -->
             <div class="dropdown-section">
-                <div class="dropdown-header" onclick="toggleDropdown('checklist')">
+                <div class="dropdown-header" id="checklist-header">
                     <div>
                         <div class="dropdown-title">📚 Class Checklist</div>
                         <div class="dropdown-subtitle">Track completed courses for your degree</div>
@@ -504,22 +560,22 @@
                         <div class="course-grid" id="course-grid">
                             <!-- Courses will be loaded dynamically from API -->
                             <div class="loading-message">Loading courses...</div>
-                        </div>
+                            </div>
 
-                    </div>
-                </div>
-            </div>
+                            </div>
+                            </div>
+                            </div>
 
 
             <!-- Map and Route Dropdown -->
             <div class="dropdown-section">
-                <div class="dropdown-header" onclick="toggleDropdown('routes')">
+                <div class="dropdown-header" id="routes-header">
                     <div>
                         <div class="dropdown-title">🗺️ Map and Route</div>
                         <div class="dropdown-subtitle">Campus navigation and building routes</div>
-                    </div>
+                            </div>
                     <div class="dropdown-arrow" id="routes-arrow">▼</div>
-                </div>
+                            </div>
                 <div class="dropdown-content" id="routes-content">
                     <div class="dropdown-inner">
                         <h4 style="margin-bottom: 10px; color: #2c3e50; font-size: 0.9rem;">Monday Route</h4>
@@ -530,7 +586,7 @@
                                 <div class="route-location">COP 3530 - Parking Garage 6</div>
                             </div>
                             <div class="route-status">📍 Start</div>
-                        </div>
+                            </div>
 
                         <div class="route-item">
                             <div class="route-info">
@@ -538,7 +594,7 @@
                                 <div class="route-location">Walk to Academic Health Center</div>
                             </div>
                             <div class="route-status">🚶‍♂️ 8 min</div>
-                        </div>
+                            </div>
 
                         <div class="route-item">
                             <div class="route-info">
@@ -546,22 +602,74 @@
                                 <div class="route-location">CAI 4002 - AHC 5 212A</div>
                             </div>
                             <div class="route-status">📍 Class</div>
-                        </div>
+                            </div>
 
                         <div class="embedded-map">
-                            <iframe
-                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3586.507715430123!2d-80.3760!3d25.7565!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x88d9b8f1b6c5e5e1%3A0x2a0a0b0b0b0b0b0b!2sFlorida%20International%20University!5e0!3m2!1sen!2sus!4v1633072800000!5m2!1sen!2sus"
-                                width="100%" height="200" style="border:0; border-radius: 8px;" allowfullscreen=""
-                                loading="lazy" referrerpolicy="no-referrer-when-downgrade">
-                            </iframe>
+                            <div id="map" style="width: 100%; height: 200px; border-radius: 8px;"></div>
+                            </div>
+                            </div>
+                            </div>
+                            </div>
+
+            <!-- Schedule Dropdown -->
+            <div class="dropdown-section">
+                <div class="dropdown-header" id="schedule-header">
+                    <div>
+                        <div class="dropdown-title">📅 Schedule</div>
+                        <div class="dropdown-subtitle">Weekly class schedule and calendar</div>
+                    </div>
+                    <div class="dropdown-arrow" id="schedule-arrow">▼</div>
+                </div>
+                <div class="dropdown-content" id="schedule-content">
+                    <div class="dropdown-inner">
+                        <div class="schedule-calendar">
+                            <div class="calendar-header">
+                                <h4 style="margin-bottom: 10px; color: #2c3e50; font-size: 0.9rem;">This Week's Schedule</h4>
+                            </div>
+                            <div class="calendar-grid">
+                                <div class="day-column">
+                                    <div class="day-header">Mon</div>
+                                    <div class="day-content">
+                                        <div class="schedule-item class">9:30 AM<br>COP 3530</div>
+                                        <div class="schedule-item class">12:30 PM<br>CAI 4002</div>
+                                </div>
+                                </div>
+                                <div class="day-column">
+                                    <div class="day-header">Tue</div>
+                                    <div class="day-content">
+                                        <div class="schedule-item class">11:00 AM<br>MAD 3512</div>
+                                        <div class="schedule-item class">2:00 PM<br>COT 3541</div>
+                            </div>
+                                </div>
+                                <div class="day-column">
+                                    <div class="day-header">Wed</div>
+                                    <div class="day-content">
+                                        <div class="schedule-item class">9:30 AM<br>COP 3530</div>
+                                        <div class="schedule-item class">12:30 PM<br>CAI 4002</div>
+                                </div>
+                            </div>
+                                <div class="day-column">
+                                    <div class="day-header">Thu</div>
+                                    <div class="day-content">
+                                        <div class="schedule-item class">11:00 AM<br>MAD 3512</div>
+                                        <div class="schedule-item class">2:00 PM<br>COT 3541</div>
+                                </div>
+                                </div>
+                                <div class="day-column">
+                                    <div class="day-header">Fri</div>
+                                    <div class="day-content">
+                                        <div class="schedule-item class">10:00 AM<br>CAP 4052</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+                    </div>
+            </div>
 
             <!-- Major Tracking Dropdown -->
             <div class="dropdown-section">
-                <div class="dropdown-header" onclick="toggleDropdown('tracking')">
+                <div class="dropdown-header" id="tracking-header">
                     <div>
                         <div class="dropdown-title">📊 Major Tracking</div>
                         <div class="dropdown-subtitle">Credits, GPA, semester, prerequisites progress</div>
