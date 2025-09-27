@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FIU Degree Tracker</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDaK8v3R7sOR-yXymcDVsgQVX2-U8pgJR0&libraries=geometry"></script>
     <style>
         * {
             margin: 0;
@@ -14,38 +15,47 @@
 
         body {
             width: 430px;
-            height: 100vh;
+            height: 740px;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #333;
             overflow-x: hidden;
-            min-width: 450px;
+            margin: 0;
+            padding: 0;
+            position: fixed;
+            top: 0;
+            right: 0;
+            z-index: 9999;
         }
 
         .container {
-            height: 100vh;
+            width: 100%;
+            height: 100%;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
         }
 
         .header {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            padding: 20px 15px;
+            padding: 8px 15px;
             text-align: center;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .header h1 {
             color: #2c3e50;
-            font-size: 1.4rem;
-            margin-bottom: 5px;
+            font-size: 1.1rem;
+            margin-bottom: 2px;
         }
 
         .header p {
             color: #7f8c8d;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
+            margin: 0;
         }
 
         .content {
@@ -53,25 +63,27 @@
         }
 
         .major-selector {
-            margin-bottom: 20px;
+            margin-bottom: 10px;
+            margin-top: -5px;
         }
 
         .major-selector label {
             display: block;
             font-weight: 600;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             color: #2c3e50;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
         }
 
         .major-dropdown {
             width: 100%;
-            padding: 10px;
+            padding: 6px 10px;
             border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
+            border-radius: 6px;
+            font-size: 13px;
             background: white;
             cursor: pointer;
+            height: 32px;
         }
 
         .major-dropdown:focus {
@@ -80,7 +92,7 @@
         }
 
         .ai-agent-section {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: linear-gradient(135deg, #66eaa6, #4b54a2);
             color: white;
             padding: 15px;
             border-radius: 12px;
@@ -316,69 +328,6 @@
             font-weight: bold;
         }
 
-        /* Schedule Styles */
-        .schedule-grid {
-            background: white;
-            border-radius: 6px;
-            overflow: hidden;
-            border: 1px solid #e0e0e0;
-            font-size: 10px;
-        }
-
-        .schedule-header {
-            display: grid;
-            grid-template-columns: 50px repeat(5, 1fr);
-            background: #f8f9fa;
-            border-bottom: 1px solid #e0e0e0;
-            font-weight: 600;
-        }
-
-        .schedule-header div {
-            padding: 6px 2px;
-            text-align: center;
-            border-right: 1px solid #e0e0e0;
-            font-size: 9px;
-        }
-
-        .schedule-row {
-            display: grid;
-            grid-template-columns: 50px repeat(5, 1fr);
-            border-bottom: 1px solid #f0f0f0;
-            min-height: 25px;
-        }
-
-        .schedule-time {
-            background: #f8f9fa;
-            padding: 3px;
-            font-size: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-right: 1px solid #e0e0e0;
-            font-weight: 500;
-        }
-
-        .schedule-cell {
-            border-right: 1px solid #f0f0f0;
-            padding: 1px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .class-block {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border-radius: 2px;
-            padding: 1px 3px;
-            font-size: 7px;
-            text-align: center;
-            width: 100%;
-            height: 90%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
 
         /* Progress Tracking Styles */
         .progress-stats {
@@ -457,55 +406,6 @@
             margin-top: 2px;
         }
 
-        /* Suggested Courses Styles */
-        .suggested-courses {
-            margin-top: 10px;
-        }
-
-        .suggested-course {
-            background: #f0f8ff;
-            border: 1px solid #e3f2fd;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 10px;
-        }
-
-        .suggested-course-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .suggested-course-header strong {
-            color: #2c3e50;
-            font-size: 0.85rem;
-        }
-
-        .credits-badge {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            font-weight: 600;
-        }
-
-        .suggested-course-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-
-        .course-tag {
-            background: rgba(52, 152, 219, 0.1);
-            border: 1px solid rgba(52, 152, 219, 0.3);
-            color: #2980b9;
-            padding: 4px 8px;
-            border-radius: 15px;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
 
         /* Scrollbar */
         .container::-webkit-scrollbar {
@@ -534,6 +434,70 @@
             border: none;
             border-radius: 8px;
         }
+
+        .loading-message {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-style: italic;
+        }
+
+        /* Schedule Calendar Styles */
+        .schedule-calendar {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .day-column {
+            text-align: center;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: #f8f9fa;
+        }
+
+        .day-header {
+            background: #667eea;
+            color: white;
+            padding: 8px 4px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .day-content {
+            padding: 8px 4px;
+            min-height: 80px;
+        }
+
+        .schedule-item {
+            margin-bottom: 4px;
+            padding: 4px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+
+        .schedule-item.class {
+            background: #e8f4f8;
+            color: #2c3e50;
+            border: 1px solid #3498db;
+        }
+
+        .schedule-item.free {
+            background: #f0f0f0;
+            color: #7f8c8d;
+            font-style: italic;
+        }
     </style>
 </head>
 
@@ -560,18 +524,16 @@
 
             <!-- AI Agent Section -->
             <div class="ai-agent-section">
-                <h3>🤖 AI Agent</h3>
+                <h3>🤖 Ask Roary</h3>
                 <input type="text" class="ai-input" placeholder="Ask about courses, prerequisites, or planning...">
 
                 <!-- Prompt templates container -->
                 <div class="prompt-templates">
-                    <button class="prompt-btn"
-                        onclick="document.querySelector('.ai-input').value=`Given the courses I've completed ({{completedCourses}}), what courses should I take next to stay on track for graduation?`">
+                    <button class="prompt-btn" id="next-courses-btn">
                         What should I take next?
                     </button>
 
-                    <button class="prompt-btn"
-                        onclick="document.querySelector('.ai-input').value=`What are the requirements for {{courseCode}}? Include prerequisites and corequisites.`">
+                    <button class="prompt-btn" id="course-requirements-btn">
                         Course requirements
                     </button>
                 </div>
@@ -581,10 +543,10 @@
 
             <!-- Class Checklist / Class Planner Dropdown -->
             <div class="dropdown-section">
-                <div class="dropdown-header" onclick="toggleDropdown('checklist')">
+                <div class="dropdown-header" id="checklist-header">
                     <div>
-                        <div class="dropdown-title">📚 Class Checklist / Class Planner</div>
-                        <div class="dropdown-subtitle">Track completed courses and plan future semesters</div>
+                        <div class="dropdown-title">📚 Class Checklist</div>
+                        <div class="dropdown-subtitle">Track completed courses for your degree</div>
                     </div>
                     <div class="dropdown-arrow" id="checklist-arrow">▼</div>
                 </div>
@@ -595,333 +557,25 @@
                             <input type="text" class="filter-input" placeholder="Filter semester...">
                         </div>
 
-                        <div class="course-grid">
-                            <!-- Foundation Courses -->
-                            <div class="course-checkbox-item completed">
-                                <input type="checkbox" checked>
-                                <span>COP 2210<br><small>Programming I</small></span>
-                            </div>
-                            <div class="course-checkbox-item completed">
-                                <input type="checkbox" checked>
-                                <span>COP 3337<br><small>Programming II</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>COP 3530<br><small>Data Structures</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>COP 4338<br><small>Systems Programming</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>COP 4610<br><small>Operating Systems</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>COP 4555<br><small>Programming Languages</small></span>
+                        <div class="course-grid" id="course-grid">
+                            <!-- Courses will be loaded dynamically from API -->
+                            <div class="loading-message">Loading courses...</div>
                             </div>
 
-                            <!-- Mathematics -->
-                            <div class="course-checkbox-item completed">
-                                <input type="checkbox" checked>
-                                <span>MAC 2311<br><small>Calculus I</small></span>
                             </div>
-                            <div class="course-checkbox-item completed">
-                                <input type="checkbox" checked>
-                                <span>MAC 2312<br><small>Calculus II</small></span>
                             </div>
-                            <div class="course-checkbox-item completed">
-                                <input type="checkbox" checked>
-                                <span>STA 3033<br><small>Probability & Statistics</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>COT 3100<br><small>Discrete Structures</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>MAD 2104<br><small>Discrete Math</small></span>
                             </div>
 
-                            <!-- Systems & Architecture -->
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CDA 3102<br><small>Computer Architecture</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CNT 4713<br><small>Net-centric Computing</small></span>
-                            </div>
-
-                            <!-- Software Engineering -->
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CEN 4010<br><small>Software Engineering I</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CEN 4021<br><small>Software Engineering II</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CEN 4072<br><small>Software Testing</small></span>
-                            </div>
-
-                            <!-- AI/Machine Learning -->
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CAI 4002<br><small>Artificial Intelligence</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CAI 4105<br><small>Machine Learning</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CAI 4304<br><small>Natural Language Processing</small></span>
-                            </div>
-
-                            <!-- Database & Graphics -->
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>COP 4710<br><small>Database Management</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>COP 4751<br><small>Advanced Database</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CAP 4710<br><small>Computer Graphics</small></span>
-                            </div>
-
-                            <!-- Security & Networking -->
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CIS 4203<br><small>Digital Forensics</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CIS 4731<br><small>Blockchain Technologies</small></span>
-                            </div>
-
-                            <!-- Algorithms & Theory -->
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>COP 4534<br><small>Algorithm Techniques</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>MAD 3512<br><small>Theory of Algorithms</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>COT 3541<br><small>Logic for CS</small></span>
-                            </div>
-
-                            <!-- Mobile & Web Development -->
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>COP 4655<br><small>Mobile App Development</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>COP 4226<br><small>Advanced Windows Programming</small></span>
-                            </div>
-
-                            <!-- Game Development -->
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CAP 4052<br><small>Game Design & Development</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CAP 4506<br><small>Intro to Game Theory</small></span>
-                            </div>
-
-                            <!-- Advanced Topics -->
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>COP 4520<br><small>Parallel Computing</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>COT 4601<br><small>Quantum Computing</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CAP 4770<br><small>Data Mining</small></span>
-                            </div>
-
-                            <!-- Human-Computer Interaction -->
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CAP 4104<br><small>Human Computer Interaction</small></span>
-                            </div>
-
-                            <!-- Robotics -->
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CAP 4453<br><small>Robot Vision</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CDA 4625<br><small>Mobile Robotics</small></span>
-                            </div>
-
-                            <!-- Cloud & Distributed Systems -->
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CEN 4083<br><small>Cloud Computing</small></span>
-                            </div>
-
-                            <!-- Modeling & Simulation -->
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CAP 4830<br><small>Modeling & Simulations</small></span>
-                            </div>
-
-                            <!-- General Education -->
-                            <div class="course-checkbox-item completed">
-                                <input type="checkbox" checked>
-                                <span>ENC 3249<br><small>Technical Writing</small></span>
-                            </div>
-                            <div class="course-checkbox-item completed">
-                                <input type="checkbox" checked>
-                                <span>CGS 3095<br><small>Technology in Global Arena</small></span>
-                            </div>
-                            <div class="course-checkbox-item completed">
-                                <input type="checkbox" checked>
-                                <span>CGS 1920<br><small>Intro to Computing</small></span>
-                            </div>
-
-                            <!-- Capstone -->
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CIS 3950<br><small>Capstone I</small></span>
-                            </div>
-                            <div class="course-checkbox-item">
-                                <input type="checkbox">
-                                <span>CIS 4951<br><small>Capstone II</small></span>
-                            </div>
-                        </div>
-
-                        <h4 style="margin: 15px 0 8px 0; color: #2c3e50; font-size: 0.9rem;">📚 Suggested Next Courses
-                        </h4>
-                        <div class="suggested-courses">
-                            <div class="suggested-course">
-                                <div class="suggested-course-header">
-                                    <strong>Spring 2025 - Ready to Take</strong>
-                                    <span class="credits-badge">9 credits</span>
-                                </div>
-                                <div class="suggested-course-list">
-                                    <span class="course-tag">COP 3530 - Data Structures</span>
-                                    <span class="course-tag">COT 3100 - Discrete Structures</span>
-                                    <span class="course-tag">ENC 3249 - Technical Writing</span>
-                                </div>
-                            </div>
-
-                            <div class="suggested-course">
-                                <div class="suggested-course-header">
-                                    <strong>Summer 2025 - Prerequisites Met</strong>
-                                    <span class="credits-badge">6 credits</span>
-                                </div>
-                                <div class="suggested-course-list">
-                                    <span class="course-tag">CDA 3102 - Computer Architecture</span>
-                                    <span class="course-tag">CGS 3095 - Technology in Global Arena</span>
-                                </div>
-                            </div>
-
-                            <div class="suggested-course">
-                                <div class="suggested-course-header">
-                                    <strong>Fall 2025 - After Prerequisites</strong>
-                                    <span class="credits-badge">9 credits</span>
-                                </div>
-                                <div class="suggested-course-list">
-                                    <span class="course-tag">COP 4338 - Systems Programming</span>
-                                    <span class="course-tag">CEN 4010 - Software Engineering I</span>
-                                    <span class="course-tag">CNT 4713 - Net-centric Computing</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Class Schedule Dropdown -->
-            <div class="dropdown-section">
-                <div class="dropdown-header" onclick="toggleDropdown('schedule')">
-                    <div>
-                        <div class="dropdown-title">📅 Class Schedule</div>
-                        <div class="dropdown-subtitle">View your current semester schedule</div>
-                    </div>
-                    <div class="dropdown-arrow" id="schedule-arrow">▼</div>
-                </div>
-                <div class="dropdown-content" id="schedule-content">
-                    <div class="dropdown-inner">
-                        <div class="schedule-grid">
-                            <div class="schedule-header">
-                                <div>Time</div>
-                                <div>Mon</div>
-                                <div>Tue</div>
-                                <div>Wed</div>
-                                <div>Thu</div>
-                                <div>Fri</div>
-                            </div>
-
-                            <div class="schedule-row">
-                                <div class="schedule-time">9:00</div>
-                                <div class="schedule-cell">
-                                    <div class="class-block">COP 3530</div>
-                                </div>
-                                <div class="schedule-cell"></div>
-                                <div class="schedule-cell">
-                                    <div class="class-block">COP 3530</div>
-                                </div>
-                                <div class="schedule-cell"></div>
-                                <div class="schedule-cell"></div>
-                            </div>
-
-                            <div class="schedule-row">
-                                <div class="schedule-time">10:00</div>
-                                <div class="schedule-cell"></div>
-                                <div class="schedule-cell">
-                                    <div class="class-block">COT 3100</div>
-                                </div>
-                                <div class="schedule-cell"></div>
-                                <div class="schedule-cell">
-                                    <div class="class-block">COT 3100</div>
-                                </div>
-                                <div class="schedule-cell"></div>
-                            </div>
-
-                            <div class="schedule-row">
-                                <div class="schedule-time">12:00</div>
-                                <div class="schedule-cell">
-                                    <div class="class-block">CAI 4002</div>
-                                </div>
-                                <div class="schedule-cell"></div>
-                                <div class="schedule-cell">
-                                    <div class="class-block">CAI 4002</div>
-                                </div>
-                                <div class="schedule-cell"></div>
-                                <div class="schedule-cell"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- Map and Route Dropdown -->
             <div class="dropdown-section">
-                <div class="dropdown-header" onclick="toggleDropdown('routes')">
+                <div class="dropdown-header" id="routes-header">
                     <div>
                         <div class="dropdown-title">🗺️ Map and Route</div>
                         <div class="dropdown-subtitle">Campus navigation and building routes</div>
-                    </div>
+                            </div>
                     <div class="dropdown-arrow" id="routes-arrow">▼</div>
-                </div>
+                            </div>
                 <div class="dropdown-content" id="routes-content">
                     <div class="dropdown-inner">
                         <h4 style="margin-bottom: 10px; color: #2c3e50; font-size: 0.9rem;">Monday Route</h4>
@@ -932,7 +586,7 @@
                                 <div class="route-location">COP 3530 - Parking Garage 6</div>
                             </div>
                             <div class="route-status">📍 Start</div>
-                        </div>
+                            </div>
 
                         <div class="route-item">
                             <div class="route-info">
@@ -940,7 +594,7 @@
                                 <div class="route-location">Walk to Academic Health Center</div>
                             </div>
                             <div class="route-status">🚶‍♂️ 8 min</div>
-                        </div>
+                            </div>
 
                         <div class="route-item">
                             <div class="route-info">
@@ -948,22 +602,74 @@
                                 <div class="route-location">CAI 4002 - AHC 5 212A</div>
                             </div>
                             <div class="route-status">📍 Class</div>
-                        </div>
+                            </div>
 
                         <div class="embedded-map">
-                            <iframe
-                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3586.507715430123!2d-80.3760!3d25.7565!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x88d9b8f1b6c5e5e1%3A0x2a0a0b0b0b0b0b0b!2sFlorida%20International%20University!5e0!3m2!1sen!2sus!4v1633072800000!5m2!1sen!2sus"
-                                width="100%" height="200" style="border:0; border-radius: 8px;" allowfullscreen=""
-                                loading="lazy" referrerpolicy="no-referrer-when-downgrade">
-                            </iframe>
+                            <div id="map" style="width: 100%; height: 200px; border-radius: 8px;"></div>
+                            </div>
+                            </div>
+                            </div>
+                            </div>
+
+            <!-- Schedule Dropdown -->
+            <div class="dropdown-section">
+                <div class="dropdown-header" id="schedule-header">
+                    <div>
+                        <div class="dropdown-title">📅 Schedule</div>
+                        <div class="dropdown-subtitle">Weekly class schedule and calendar</div>
+                    </div>
+                    <div class="dropdown-arrow" id="schedule-arrow">▼</div>
+                </div>
+                <div class="dropdown-content" id="schedule-content">
+                    <div class="dropdown-inner">
+                        <div class="schedule-calendar">
+                            <div class="calendar-header">
+                                <h4 style="margin-bottom: 10px; color: #2c3e50; font-size: 0.9rem;">This Week's Schedule</h4>
+                            </div>
+                            <div class="calendar-grid">
+                                <div class="day-column">
+                                    <div class="day-header">Mon</div>
+                                    <div class="day-content">
+                                        <div class="schedule-item class">9:30 AM<br>COP 3530</div>
+                                        <div class="schedule-item class">12:30 PM<br>CAI 4002</div>
+                                </div>
+                                </div>
+                                <div class="day-column">
+                                    <div class="day-header">Tue</div>
+                                    <div class="day-content">
+                                        <div class="schedule-item class">11:00 AM<br>MAD 3512</div>
+                                        <div class="schedule-item class">2:00 PM<br>COT 3541</div>
+                            </div>
+                                </div>
+                                <div class="day-column">
+                                    <div class="day-header">Wed</div>
+                                    <div class="day-content">
+                                        <div class="schedule-item class">9:30 AM<br>COP 3530</div>
+                                        <div class="schedule-item class">12:30 PM<br>CAI 4002</div>
+                                </div>
+                            </div>
+                                <div class="day-column">
+                                    <div class="day-header">Thu</div>
+                                    <div class="day-content">
+                                        <div class="schedule-item class">11:00 AM<br>MAD 3512</div>
+                                        <div class="schedule-item class">2:00 PM<br>COT 3541</div>
+                                </div>
+                                </div>
+                                <div class="day-column">
+                                    <div class="day-header">Fri</div>
+                                    <div class="day-content">
+                                        <div class="schedule-item class">10:00 AM<br>CAP 4052</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+                    </div>
+            </div>
 
             <!-- Major Tracking Dropdown -->
             <div class="dropdown-section">
-                <div class="dropdown-header" onclick="toggleDropdown('tracking')">
+                <div class="dropdown-header" id="tracking-header">
                     <div>
                         <div class="dropdown-title">📊 Major Tracking</div>
                         <div class="dropdown-subtitle">Credits, GPA, semester, prerequisites progress</div>
@@ -999,59 +705,7 @@
         </div>
     </div>
 
-    <script>
-        function toggleDropdown(sectionName) {
-            const content = document.getElementById(sectionName + '-content');
-            const arrow = document.getElementById(sectionName + '-arrow');
-            const header = arrow.parentElement;
-
-            const isExpanded = content.classList.contains('expanded');
-
-            if (isExpanded) {
-                // Collapse
-                content.classList.remove('expanded');
-                arrow.classList.remove('rotated');
-                header.classList.remove('active');
-            } else {
-                // Expand
-                content.classList.add('expanded');
-                arrow.classList.add('rotated');
-                header.classList.add('active');
-            }
-        }
-
-        // Course checkbox functionality
-        document.querySelectorAll('.course-checkbox-item input').forEach(checkbox => {
-            checkbox.addEventListener('change', function () {
-                const item = this.closest('.course-checkbox-item');
-                if (this.checked) {
-                    item.classList.add('completed');
-                } else {
-                    item.classList.remove('completed');
-                }
-                updateProgress();
-            });
-        });
-
-        function updateProgress() {
-            const total = document.querySelectorAll('.course-checkbox-item').length;
-            const completed = document.querySelectorAll('.course-checkbox-item.completed').length;
-            const percentage = Math.floor((completed / total) * 100);
-
-            // Update progress displays
-            console.log(`Progress: ${completed}/${total} (${percentage}%)`);
-        }
-
-        // AI Agent functionality
-        document.querySelector('.ai-button').addEventListener('click', function () {
-            const input = document.querySelector('.ai-input');
-            const query = input.value.trim();
-            if (query) {
-                alert(`AI: Looking up information about "${query}"...`);
-                input.value = '';
-            }
-        });
-    </script>
+    <script src="popup.js"></script>
 </body>
 
 </html>

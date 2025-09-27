@@ -72,6 +72,13 @@ async def seed_data():
             {"code": "COT 3100", "name": "Discrete Structures", "credits": 3, "prereqs": ["MAC 2311"], "coreqs": []},
             {"code": "MAD 2104", "name": "Discrete Math", "credits": 3, "prereqs": ["MAC 2311"], "coreqs": []},
             
+            # Missing courses from major requirements
+            {"code": "CSG 1920", "name": "Introduction to Computer Science", "credits": 3, "prereqs": [], "coreqs": []},
+            {"code": "ENC 3249", "name": "Technical Writing", "credits": 3, "prereqs": [], "coreqs": []},
+            {"code": "ENC 3213", "name": "Professional Writing", "credits": 3, "prereqs": [], "coreqs": []},
+            {"code": "CSG 3095", "name": "Computer Science Seminar", "credits": 1, "prereqs": [], "coreqs": []},
+            {"code": "COP 4336", "name": "Advanced Programming", "credits": 3, "prereqs": ["COP 3337"], "coreqs": []},
+            
             # Systems & Architecture
             {"code": "CDA 3102", "name": "Computer Architecture", "credits": 3, "prereqs": ["COP 3337"], "coreqs": []},
             {"code": "CNT 4713", "name": "Net-centric Computing", "credits": 3, "prereqs": ["COP 3530"], "coreqs": []},
