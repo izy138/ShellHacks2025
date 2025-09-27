@@ -3,15 +3,6 @@ import requests
 # Change this if your server is running elsewhere
 BASE_URL = "http://127.0.0.1:8000/api"
 
-# Example user data
-user_data = {
-    "user_id": "u1",
-    "major": "CS",
-    "taken_classes": ["COP1000"],
-    "current_courses": [],
-    "blocked_time": {"mon": [{"start": "10:00", "end": "12:00", "location": "WRC"}]}
-}
-
 # Example major data
 major_data = {
     "major_id": "COMPSC:BS",
@@ -231,13 +222,13 @@ courses_data = [
         "credits": 3
     }, {
         "code": "ENC3249",
-        "name": "Professional & Technical Writing for CS",
+        "name": "Prof. & Techn. Writing for CS",
         "description": "Introduces students to the expectations of written and verbal communication in the computer science profession; explores the ways in which technology and media help shape professional communication.",
         "credits": 3,
         "prereqs": ["ENC1102"]
     }, {
         "code": "ENC3213",
-        "name": "Professional & Technical Writing",
+        "name": "Prof. & Techn. Writing",
         "description": "Principles and practices of effective workplace writing. Students learn audience analysis in order to become more effective writers. Genres include memos, business letters, proposals, and reports. Written work meets the state composition requirement.",
         "credits": 3,
         "prereqs": ["ENC1101", "ENC1102"]
@@ -310,10 +301,10 @@ courses_data = [
         "prereqs": ["COP4338"]
     }, {
         "code": "COP4555",
-        "name": "Principles of Programming Languages",
+        "name": "Principles of Prog. Langs.",
         "description": "A comparative study of several programming languages and paradigms. Emphasis is given to design, evaluation and implementation. Programs are written in a few of the languages. This course will have additional fees. Prerequisite: COP 3530 or COP 3538",
         "credits": 3,
-        "prereqs": ["COP3530|COP3538"]
+        "prereqs": ["COP3530"]
     }, {
         "code": "CDA3103",
         "name": "Fundamentals of Computer Systems",
@@ -436,10 +427,6 @@ locations = [
 
     {"code": "EC",     "full_name": "Engineering Center",                                           "address": "10555 W Flagler St, Miami, FL 33174",                                                   "google_maps_place_id": "ChIJd7VebNW-2YgRAdPCOn7hsak"}
 ]
-
-# Upload user
-r = requests.post(f"{BASE_URL}/users", json=user_data)
-print("User:", r.status_code, r.json())
 
 # Upload major
 r = requests.post(f"{BASE_URL}/majors", json=major_data)
