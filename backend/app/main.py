@@ -2,6 +2,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import router
 from app.db import db
+import uuid, httpx
+from fastapi import Request, HTTPException
+import os
+ADK_BASE = os.getenv("ADK_BASE", "http://127.0.0.1:8001")
+ADK_APP  = os.getenv("ADK_APP",  "panther_agent")
+
 
 app = FastAPI()
 
@@ -154,3 +160,66 @@ async def seed_data():
         return {"status": "success", "message": "Sample data seeded successfully"}
     except Exception as e:
         return {"status": "error", "message": f"Failed to seed data: {str(e)}"}
+
+
+def _extract_adk_text(adk_json):
+    try:
+        # ADK returns a list of events; first item -> content.parts[].text
+        parts = adk_json[0].get("content", {}).get("parts", [])
+        texts = [p.get("text") for p in parts if isinstance(p, dict) and "text" in p]
+        return "\n".join(t for t in texts if t)
+    except Exception:
+        return None
+
+
+@app.post("/api/agent/ask")
+async def ai_chat(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    q = (body.get("query") or "").strip()
+    if not q:
+        raise HTTPException(status_code=400, detail="Missing 'query'")
+
+    session_id = body.get("session_id") or uuid.uuid4().hex
+    user_id    = body.get("user_id") or "dev-user"
+
+    # 1) ensure the ADK session exists
+# in your /api/agent/ask handler, replace the session create block with:
+
+    session_url = f"{ADK_BASE}/apps/{ADK_APP}/users/{user_id}/sessions/{session_id}"
+    async with httpx.AsyncClient(timeout=30) as client:
+        mk = await client.post(session_url, json={})
+        # Treat "already exists" as success across implementations.
+        ok_statuses = {200, 201, 409}
+        if mk.status_code not in ok_statuses:
+            # Some ADK builds return 400 with a 'Session already exists' message.
+            if mk.status_code == 400 and "Session already exists" in mk.text:
+                pass  # acceptable — continue
+            else:
+                raise HTTPException(
+                    status_code=502,
+                    detail=f"ADK session create failed: {mk.status_code} {mk.text}"
+                )
+
+        # Now send the message
+        payload = {
+            "appName": ADK_APP,
+            "userId": user_id,
+            "sessionId": session_id,
+            "newMessage": {
+                "role": "user",
+                "parts": [{"text": q}],
+            },
+        }
+        r = await client.post(f"{ADK_BASE}/run", json=payload)
+        if r.status_code != 200:
+            raise HTTPException(status_code=502, detail=f"ADK proxy failed: {r.status_code} {r.text}")
+        data = r.json()
+
+
+    # 3) extract readable reply
+    answer = _extract_adk_text(data) or "(empty reply)"
+    return {"response": answer, "session_id": session_id}

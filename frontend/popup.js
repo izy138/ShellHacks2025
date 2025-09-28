@@ -1013,6 +1013,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Only one submit handler is set via onsubmit below
     }
     setupMajorDropdown();
+
     // AI Agent dropdown
     const aiHeader = document.getElementById('ai-header');
     if (aiHeader) {
@@ -1322,32 +1323,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Load courses from API
     loadCoursesFromAPI();
 
-    // AI Agent functionality
-    const aiButton = document.querySelector('.ai-button');
-    const aiInput = document.querySelector('.ai-input');
-    
-    if (aiButton && aiInput) {
-        aiButton.addEventListener('click', async function () {
-            const query = aiInput.value.trim();
-            if (query) {
-                await sendAIQuery(query);
-                aiInput.value = '';
-            }
-        });
-
-        // Allow Enter key to submit AI query (Shift+Enter for new line)
-        aiInput.addEventListener('keydown', async function (e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                const query = aiInput.value.trim();
-                if (query) {
-                    await sendAIQuery(query);
-                    aiInput.value = '';
-                }
-            }
-        });
-    }
-    
+ 
     // Initialize Google Maps when routes dropdown is opened
     const routesHeader = document.getElementById('routes-header');
     if (routesHeader) {
@@ -1430,64 +1406,6 @@ function updateProgress() {
     console.log(`Progress: ${completed}/${total} (${percentage}%)`);
 }
 
-// AI Query function
-async function sendAIQuery(query) {
-    try {
-        // Show loading state
-        showNotification('🤔 Asking Roary...');
-        
-        // Get user ID for context
-        const userId = getUserId();
-        
-        const response = await fetch(`${API_BASE_URL}/ai/chat`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ 
-                message: query,
-                user_id: userId
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log('AI Response:', data);
-        
-        // Show response in the AI response area
-        displayAIResponse(data.response || 'Sorry, I couldn\'t process your question right now.');
-
-    } catch (error) {
-        console.error('Error sending AI query:', error);
-        showNotification('Sorry, I\'m having trouble connecting to Roary. Please try again later.');
-    }
-}
-
-// Display AI response in the dedicated response area
-function displayAIResponse(response) {
-    const responseArea = document.getElementById('ai-response-area');
-    const responseContent = document.getElementById('ai-response-content');
-    
-    if (responseArea && responseContent) {
-        responseContent.textContent = response;
-        responseArea.style.display = 'block';
-        
-        // Scroll to the response area
-        responseArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-}
-
-// Clear AI response
-function clearAIResponse() {
-    const responseArea = document.getElementById('ai-response-area');
-    if (responseArea) {
-        responseArea.style.display = 'none';
-    }
-}
-
 // Get completed courses from the checklist
 function getCompletedCoursesFromChecklist() {
     const completedCourses = [];
@@ -1501,96 +1419,6 @@ function getCompletedCoursesFromChecklist() {
     });
     
     return completedCourses;
-}
-
-// Show AI response in a detailed popup (keeping for backward compatibility)
-function showAIResponse(response) {
-    // Create a modal-like response
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 10000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    `;
-    
-    const content = document.createElement('div');
-    content.style.cssText = `
-        background: white;
-        padding: 20px;
-        border-radius: 10px;
-        max-width: 500px;
-        max-height: 400px;
-        overflow-y: auto;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        position: relative;
-    `;
-    
-    const header = document.createElement('div');
-    header.style.cssText = `
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 15px;
-        padding-bottom: 10px;
-        border-bottom: 2px solid #013677;
-    `;
-    
-    const title = document.createElement('h3');
-    title.textContent = '🤖 Roary\'s Response';
-    title.style.cssText = `
-        margin: 0;
-        color: #013677;
-        font-size: 1.1rem;
-    `;
-    
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent = '✕';
-    closeBtn.style.cssText = `
-        background: none;
-        border: none;
-        font-size: 1.2rem;
-        cursor: pointer;
-        color: #666;
-        padding: 0;
-        width: 25px;
-        height: 25px;
-    `;
-    
-    const responseText = document.createElement('div');
-    responseText.textContent = response;
-    responseText.style.cssText = `
-        line-height: 1.5;
-        color: #333;
-        white-space: pre-wrap;
-    `;
-    
-    header.appendChild(title);
-    header.appendChild(closeBtn);
-    content.appendChild(header);
-    content.appendChild(responseText);
-    modal.appendChild(content);
-    
-    // Close modal functionality
-    const closeModal = () => {
-        modal.remove();
-    };
-    
-    closeBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeModal();
-    });
-    
-    document.body.appendChild(modal);
-    
-    // Auto-close after 10 seconds
-    setTimeout(closeModal, 10000);
 }
 
 // Open PantherSoft registration
@@ -1684,3 +1512,100 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     }
 });
 }
+
+
+// --- AI Agent wiring (drop-in) ---
+(function () {
+    const API_BASE_URL = 'http://127.0.0.1:8000/api'; // keep your current value
+  
+    const aiButton = document.querySelector('.ai-button');
+    const aiInput  = document.querySelector('.ai-input');
+    const aiOut    = document.getElementById('ai-output');
+    const nextBtn  = document.getElementById('next-courses-btn');
+    const reqBtn   = document.getElementById('course-requirements-btn');
+  
+    if (!aiButton || !aiInput || !aiOut) return;
+  
+    // ensure black text for output (in case of dark theme)
+    aiOut.style.color = '#000';
+  
+    // simple local storage session so multi-turn works
+    const getSessionId = () => {
+      try { return localStorage.getItem('adkSessionId') || null; } catch { return null; }
+    };
+    const setSessionId = (sid) => {
+      try { if (sid) localStorage.setItem('adkSessionId', sid); } catch {}
+    };
+  
+    async function sendToAgent(query) {
+      aiOut.textContent = 'Thinking…';
+      aiButton.disabled = true;
+  
+      try {
+        const body = { query };
+        const sid = getSessionId();
+        if (sid) body.session_id = sid; // reuse the same ADK session
+  
+        const res = await fetch(`${API_BASE_URL}/agent/ask`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+  
+        const data = await res.json();
+  
+        if (!res.ok) {
+          aiOut.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+          return;
+        }
+  
+        // persist session id returned by backend
+        if (data.session_id) setSessionId(data.session_id);
+  
+        const answer = data.response ?? data.answer ?? data.output ?? data.result ?? data.text ?? data;
+        aiOut.textContent = typeof answer === 'string' ? answer : JSON.stringify(answer, null, 2);
+
+      } catch (e) {
+        console.error(e);
+        aiOut.textContent = 'Request failed.';
+      } finally {
+        aiButton.disabled = false;
+      }
+    }
+  
+    // Wire the main Ask button
+    aiButton.addEventListener('click', async () => {
+      const q = (aiInput.value || '').trim();
+      if (!q) return;
+      await sendToAgent(q);
+      aiInput.value = '';
+    });
+  
+    // Enter submits (Shift+Enter = newline)
+    aiInput.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const q = (aiInput.value || '').trim();
+        if (!q) return;
+        await sendToAgent(q);
+        aiInput.value = '';
+      }
+    });
+  
+    // Prompt template buttons just fill the input (and optionally auto-send)
+    if (nextBtn) {
+      nextBtn.addEventListener('click', async () => {
+        aiInput.value = 'What should I take next?';
+        // If you want it to auto-send, uncomment:
+        // aiButton.click();
+      });
+    }
+  
+    if (reqBtn) {
+      reqBtn.addEventListener('click', () => {
+        aiInput.value = 'Course requirements';
+        // aiButton.click();
+      });
+    }
+  })();
+  

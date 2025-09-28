@@ -152,7 +152,7 @@
         }
 
         .ai-content {
-            max-height: 160px;
+            max-height: 1700px;
             overflow: hidden;
             transition: max-height 0.3s ease;
         }
@@ -686,7 +686,6 @@
                     <option value="">Select your major...</option>
                 </select>
             </div>
-
             <!-- AI Agent Section -->
             <div class="ai-agent-section">
                 <div class="ai-header" id="ai-header">
@@ -711,15 +710,7 @@
                     </div>
 
                     <!-- AI Response Display Area -->
-                    <div class="ai-response-area" id="ai-response-area" style="display: none;">
-                        <div class="ai-response-header">
-                            <h4>🤖 Roary's Response</h4>
-                            <button class="clear-response-btn" id="clear-response-btn">✕</button>
-                        </div>
-                        <div class="ai-response-content" id="ai-response-content">
-                            <!-- AI responses will be displayed here -->
-                        </div>
-                    </div>
+                    <pre id="ai-output" style="white-space:pre-wrap; background:#f7f7f7; padding:8px; border-radius:6px; margin-top:8px; min-height:60px;"></pre>
 
                 </div>
             </div>
