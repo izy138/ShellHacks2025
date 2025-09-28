@@ -800,7 +800,6 @@ function addCheckboxEventListeners() {
                 if (this.checked) {
                     if (missingPrereqs.length > 0) {
                         item.classList.add('prereq-warning');
-                        alert(`Warning: You have not completed the following prerequisites for ${courseCode}:\n${missingPrereqs.join(', ')}`);
                     } else {
                         item.classList.remove('prereq-warning');
                     }
