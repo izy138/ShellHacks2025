@@ -1,4 +1,4 @@
-// Fetch all majors from API
+
 // Generic cache utility
 function getCachedData(key) {
     const cached = localStorage.getItem(key);
@@ -97,8 +97,9 @@ async function setupMajorDropdown() {
 }
 // popup.js - Chrome Extension Popup Logic
 
-// API Configuration
+
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
+
 
 // Google Maps and Polyline functionality
 let map;
@@ -1210,3 +1211,52 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     }
 });
 }
+
+// Simple agent test sender (frontend calls FastAPI)
+document.addEventListener('DOMContentLoaded', () => {
+    const sendBtn = document.getElementById('agent-test-send');
+    const inputEl = document.getElementById('agent-test-input');
+    const outEl   = document.getElementById('agent-test-output');
+    if (!sendBtn || !inputEl || !outEl) return;
+  
+    // optional: keep the same ADK session for multi-turn
+    const getSessionId = () => localStorage.getItem('adkSessionId') || null;
+    const setSessionId = (sid) => { try { if (sid) localStorage.setItem('adkSessionId', sid); } catch {} };
+  
+    sendBtn.addEventListener('click', async () => {
+      const query = (inputEl.value || '').trim();
+      if (!query) return;
+      outEl.textContent = 'Thinking…';
+      sendBtn.disabled = true;
+  
+      try {
+        const body = { query };
+        const sid = getSessionId();
+        if (sid) body.session_id = sid; // reuse if we have one
+  
+        const res = await fetch(`${API_BASE_URL}/agent/ask`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+  
+        const data = await res.json();
+        if (!res.ok) {
+          outEl.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+          return;
+        }
+  
+        // save session id for multi-turn
+        if (data.session_id) setSessionId(data.session_id);
+  
+        const answer = data.answer ?? data.output ?? data.result ?? data.text ?? data;
+        outEl.textContent = (typeof answer === 'string') ? answer : JSON.stringify(answer, null, 2);
+      } catch (e) {
+        console.error(e);
+        outEl.textContent = 'Request failed.';
+      } finally {
+        sendBtn.disabled = false;
+      }
+    });
+  });
+  

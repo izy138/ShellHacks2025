@@ -5,6 +5,7 @@ import os
 
 API_BASE = os.getenv("API_BASE", "http://127.0.0.1:8000/api")
 
+
 # ---------- requisite parsing ----------
 def _norm(code: str) -> str:
     return code.replace(" ", "").upper()

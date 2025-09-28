@@ -2,6 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import router
 from app.db import db
+import os, uuid, httpx
+from fastapi import Request, HTTPException
+
+ADK_BASE = os.getenv("ADK_BASE", "http://127.0.0.1:8001")   # ADK dev UI server
+ADK_APP  = os.getenv("ADK_APP",  "panther_agent")           # app name shown in ADK UI
 
 app = FastAPI()
 
@@ -154,3 +159,57 @@ async def seed_data():
         return {"status": "success", "message": "Sample data seeded successfully"}
     except Exception as e:
         return {"status": "error", "message": f"Failed to seed data: {str(e)}"}
+
+
+
+@app.get("/api/agent/ping")
+def agent_ping():
+    return {"ok": True, "answer": "pong"}
+
+@app.post("/api/agent/ask")
+async def ask_agent(request: Request):
+    # 1) read body
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    q = (body.get("query") or "hi").strip()
+
+    # 2) session + user (reuse if caller passes session_id)
+    session_id = body.get("session_id") or uuid.uuid4().hex
+    user_id    = body.get("user_id") or "dev-user"
+
+    # 3) ensure session exists
+    session_url = f"{ADK_BASE}/apps/{ADK_APP}/users/{user_id}/sessions/{session_id}"
+    async with httpx.AsyncClient(timeout=30) as client:
+        mk = await client.post(session_url, json={})
+        if mk.status_code not in (200, 201, 409):  # 409 = already exists (acceptable)
+            raise HTTPException(status_code=502, detail=f"ADK session create failed: {mk.status_code} {mk.text}")
+
+        # 4) send the message (ADK expects `newMessage` with parts[].text)
+        payload = {
+            "appName": ADK_APP,
+            "userId": user_id,
+            "sessionId": session_id,
+            "newMessage": {
+                "role": "user",
+                "parts": [ { "text": q } ]
+            }
+        }
+        r = await client.post(f"{ADK_BASE}/run", json=payload)
+        if r.status_code != 200:
+            raise HTTPException(status_code=502, detail=f"ADK proxy failed: {r.status_code} {r.text}")
+        data = r.json()
+
+    # 5) extract readable text from ADK response
+    def _extract_text(obj):
+        try:
+            parts = obj[0].get("content", {}).get("parts", [])
+            txts = [p.get("text") for p in parts if isinstance(p, dict) and "text" in p]
+            return "\n".join(t for t in txts if t)
+        except Exception:
+            return None
+
+    answer = _extract_text(data) or data
+    return {"ok": True, "answer": answer, "session_id": session_id}
+
