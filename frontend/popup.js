@@ -175,15 +175,27 @@ function initMap() {
     `;
     document.head.appendChild(style);
     
-    // Fetch and display real route with alternating colors
-    const testPlaceIds = [
-        'ChIJbWv74i-_2YgRqsagPWgY2Qs',
-        'ChIJh1r4NS6_2YgR-jjbTyCaHZI', 
-        'ChIJxZbHujq_2YgRdqaxvf4LcBQ'
-    ];
-    
-    // Call the new function to fetch real route data
-    fetchAndDisplayRoute(testPlaceIds);
+    // On refresh, display route for selected day from schedule
+    const routeDaySelect = document.getElementById('route-day-select');
+    let selectedDay = 'mon';
+    if (routeDaySelect) {
+        selectedDay = routeDaySelect.value || 'mon';
+    }
+    getUserData().then(userData => {
+        const blocks = (userData.schedule && userData.schedule[selectedDay]) ? userData.schedule[selectedDay] : [];
+        const placeIds = blocks.map(block => block.location && block.location.id).filter(Boolean);
+        if (placeIds.length > 0) {
+            fetchAndDisplayRoute(placeIds);
+        } else {
+            // Optionally clear map if no blocks
+            if (window.map) {
+                polylines.forEach(polyline => polyline.setMap(null));
+                polylines = [];
+                routeMarkers.forEach(marker => marker.setMap(null));
+                routeMarkers = [];
+            }
+        }
+    });
 }
 
 
@@ -877,6 +889,57 @@ function toggleAIDropdown() {
 
 // Add event listeners for dropdown headers
 document.addEventListener('DOMContentLoaded', function() {
+    // Vertically center schedule modals regardless of scroll
+    const modalStyle = document.createElement('style');
+    modalStyle.innerHTML = `
+        #add-block-modal {
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            z-index: 9999 !important;
+            background: #fff;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.18);
+            border-radius: 12px;
+            padding: 24px 18px 12px 18px;
+            min-width: 320px;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            display: none;
+        }
+        #add-block-modal[style*="display: block"] {
+            display: block !important;
+        }
+    `;
+    document.head.appendChild(modalStyle);
+    // Map and Route: update map when day is selected
+    const routeDaySelect = document.getElementById('route-day-select');
+    if (routeDaySelect) {
+        routeDaySelect.addEventListener('change', async function() {
+            const selectedDay = this.value; // e.g. 'mon', 'tue', ...
+            const userData = await getUserData();
+            const blocks = (userData.schedule && userData.schedule[selectedDay]) ? userData.schedule[selectedDay] : [];
+            // Extract place ids from block.location.id
+            const placeIds = blocks.map(block => block.location && block.location.id).filter(Boolean);
+            // Update route title
+            const dayNames = { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' };
+            const routeDayTitle = document.getElementById('route-day-title');
+            if (routeDayTitle) routeDayTitle.textContent = `${dayNames[selectedDay] || selectedDay} Route`;
+            // Call fetchAndDisplayRoute with placeIds
+            if (placeIds.length > 0) {
+                fetchAndDisplayRoute(placeIds);
+            } else {
+                // Optionally clear map or show message if no blocks
+                if (window.map) {
+                    polylines.forEach(polyline => polyline.setMap(null));
+                    polylines = [];
+                    routeMarkers.forEach(marker => marker.setMap(null));
+                    routeMarkers = [];
+                }
+            }
+        });
+    }
     // Populate location dropdown in Add Block modal
     async function populateLocationDropdown() {
         const locationSelect = document.getElementById('block-location');
@@ -898,99 +961,56 @@ document.addEventListener('DOMContentLoaded', function() {
     const addBlockForm = document.getElementById('add-block-form');
 
     if (addBlockBtn && addBlockModal) {
-        addBlockBtn.addEventListener('click', function() {
-            populateLocationDropdown();
+        addBlockBtn.addEventListener('click', async function() {
+            // Reset modal to add mode
+            editBlockState = null;
+            await populateLocationDropdown();
+            document.getElementById('block-day').value = 'Monday';
+            document.getElementById('block-start').value = '';
+            document.getElementById('block-end').value = '';
+            document.getElementById('block-location').value = '';
+            // Remove modal footer if present (reset buttons)
+            let modalFooter = addBlockForm.parentElement.querySelector('.modal-footer');
+            if (modalFooter) modalFooter.remove();
+            // Inject modal footer with Add and Cancel buttons
+            modalFooter = document.createElement('div');
+            modalFooter.className = 'modal-footer';
+            modalFooter.style = 'display:flex;justify-content:center;gap:10px;margin-top:10px;';
+            // Add button
+            const addBtn = document.createElement('button');
+            addBtn.type = 'submit';
+            addBtn.style = 'background:#013677;color:#fff;padding:7px 18px;border:none;border-radius:6px;font-weight:600;cursor:pointer;';
+            addBtn.textContent = 'Add';
+            // Cancel button
+            const cancelBtn = document.createElement('button');
+            cancelBtn.type = 'button';
+            cancelBtn.id = 'close-block-modal';
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.style = 'background:#eee;color:#013677;padding:7px 18px;border:none;border-radius:6px;font-weight:600;cursor:pointer;';
+            modalFooter.appendChild(addBtn);
+            modalFooter.appendChild(cancelBtn);
+            addBlockForm.appendChild(modalFooter);
+            // Cancel button logic
+            cancelBtn.onclick = function() {
+                addBlockModal.style.display = 'none';
+                editBlockState = null;
+                modalFooter.innerHTML = '';
+            };
             addBlockModal.style.display = 'block';
         });
     }
     if (closeBlockModal && addBlockModal) {
         closeBlockModal.addEventListener('click', function() {
             addBlockModal.style.display = 'none';
+            // Reset modal state
+            editBlockState = null;
+            // Remove delete button if present
+            const deleteBtn = document.getElementById('delete-block-btn');
+            if (deleteBtn) deleteBtn.remove();
         });
     }
     if (addBlockForm) {
-        addBlockForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            // Get values
-            const day = document.getElementById('block-day').value;
-            const start = document.getElementById('block-start').value;
-            const end = document.getElementById('block-end').value;
-            const locationCode = document.getElementById('block-location').value;
-
-            // Get full location object from cache
-            const locations = await fetchAllLocations();
-            const locationObj = locations.find(loc => loc.code === locationCode);
-            if (!locationObj) {
-                showNotification('Location not found!');
-                return;
-            }
-
-            // Map day to model key
-            const dayMap = {
-                Monday: 'mon',
-                Tuesday: 'tue',
-                Wednesday: 'wed',
-                Thursday: 'thu',
-                Friday: 'fri',
-                Saturday: 'sat',
-                Sunday: 'sun'
-            };
-            const modelDay = dayMap[day];
-
-            // Get user data and check for time conflicts
-            const userData = await getUserData();
-            if (!userData.schedule) {
-                userData.schedule = {
-                    mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: []
-                };
-            }
-            if (!userData.schedule[modelDay]) {
-                userData.schedule[modelDay] = [];
-            }
-            // Conflict check: neither start nor end falls within any block
-            function toMinutes(t) {
-                const [h, m] = t.split(':').map(Number);
-                return h * 60 + m;
-            }
-            const newStart = toMinutes(start);
-            const newEnd = toMinutes(end);
-            let conflict = false;
-            for (const block of userData.schedule[modelDay]) {
-                const blockStart = toMinutes(block.start_time);
-                const blockEnd = toMinutes(block.end_time);
-                // Check if new start or end falls within an existing block
-                if ((newStart >= blockStart && newStart < blockEnd) ||
-                    (newEnd > blockStart && newEnd <= blockEnd) ||
-                    (newStart < blockStart && newEnd > blockEnd)) {
-                    conflict = true;
-                    break;
-                }
-            }
-            if (conflict) {
-                showNotification('Time conflict: The entered time overlaps with an existing block.');
-                return;
-            }
-
-            // Build block object
-            const newBlock = {
-                start_time: start,
-                end_time: end,
-                location: locationObj
-            };
-            userData.schedule[modelDay].push(newBlock);
-            // Sort the day's blocks by start_time
-            userData.schedule[modelDay].sort((a, b) => {
-                const toMinutes = t => {
-                    const [h, m] = t.split(':').map(Number);
-                    return h * 60 + m;
-                };
-                return toMinutes(a.start_time) - toMinutes(b.start_time);
-            });
-            await saveUserData(userData);
-            addBlockModal.style.display = 'none';
-            showNotification(`Block added to ${day}: ${start}-${end}`);
-            // Optionally, update the schedule UI here
-        });
+        // Only one submit handler is set via onsubmit below
     }
     setupMajorDropdown();
     // AI Agent dropdown
@@ -998,6 +1018,201 @@ document.addEventListener('DOMContentLoaded', function() {
     if (aiHeader) {
         aiHeader.addEventListener('click', toggleAIDropdown);
     }
+
+        // --- SCHEDULE CALENDAR POPULATION ---
+        async function populateScheduleCalendar() {
+            const userData = await getUserData();
+            if (!userData.schedule) return;
+            const days = ['mon','tue','wed','thu','fri','sat','sun'];
+            days.forEach(dayKey => {
+                const dayDiv = document.querySelector(`.day-content[day="${dayKey}"]`);
+                if (!dayDiv) return;
+                dayDiv.innerHTML = '';
+                const blocks = userData.schedule[dayKey] || [];
+                blocks.forEach((block, idx) => {
+                    const blockDiv = document.createElement('div');
+                    blockDiv.className = 'schedule-item class';
+                    blockDiv.innerHTML = `${block.start_time} - ${block.end_time}<br>${block.location.code}`;
+                    blockDiv.style.cursor = 'pointer';
+                    blockDiv.addEventListener('click', function() {
+                        openEditBlockModal(dayKey, idx, block);
+                    });
+                    dayDiv.appendChild(blockDiv);
+                });
+            });
+            // Also update route if the changed day is the currently selected route day
+            const routeDaySelect = document.getElementById('route-day-select');
+            let selectedDay = 'mon';
+            if (routeDaySelect) {
+                selectedDay = routeDaySelect.value || 'mon';
+            }
+            const blocksForRoute = (userData.schedule && userData.schedule[selectedDay]) ? userData.schedule[selectedDay] : [];
+            const placeIds = blocksForRoute.map(block => block.location && block.location.id).filter(Boolean);
+            if (placeIds.length > 0) {
+                fetchAndDisplayRoute(placeIds);
+            } else {
+                if (window.map) {
+                    polylines.forEach(polyline => polyline.setMap(null));
+                    polylines = [];
+                    routeMarkers.forEach(marker => marker.setMap(null));
+                    routeMarkers = [];
+                }
+            }
+        }
+
+        // Modal logic for editing/deleting blocks
+        let editBlockState = null; // { dayKey, idx, block }
+        function openEditBlockModal(dayKey, idx, block) {
+            editBlockState = { dayKey, idx, block };
+            // Show modal and pre-fill values
+            populateLocationDropdown().then(() => {
+                document.getElementById('block-day').value = {
+                    mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday'
+                }[dayKey];
+                document.getElementById('block-start').value = block.start_time;
+                document.getElementById('block-end').value = block.end_time;
+                document.getElementById('block-location').value = block.location.code;
+                    // Set submit button label to 'Update'
+                    const submitBtn = addBlockForm.querySelector('button[type="submit"]');
+                    if (submitBtn) submitBtn.textContent = 'Update';
+            });
+            addBlockModal.style.display = 'block';
+            // Remove modal footer if present (reset buttons)
+            let modalFooter = addBlockForm.parentElement.querySelector('.modal-footer');
+            if (modalFooter) modalFooter.remove();
+            modalFooter = document.createElement('div');
+            modalFooter.className = 'modal-footer';
+            modalFooter.style = 'display:flex;justify-content:center;gap:10px;margin-top:10px;';
+            // Update button
+            const updateBtn = document.createElement('button');
+            updateBtn.type = 'submit';
+            updateBtn.style = 'background:#013677;color:#fff;padding:7px 18px;border:none;border-radius:6px;font-weight:600;cursor:pointer;';
+            updateBtn.textContent = 'Update';
+            // Delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.id = 'delete-block-btn';
+            deleteBtn.type = 'button';
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.style = 'background:#e74c3c;color:#fff;padding:7px 18px;border:none;border-radius:6px;font-weight:600;cursor:pointer;';
+            // Cancel button
+            const cancelBtn = document.createElement('button');
+            cancelBtn.type = 'button';
+            cancelBtn.id = 'close-block-modal';
+            cancelBtn.textContent = 'Cancel';
+            cancelBtn.style = 'background:#eee;color:#013677;padding:7px 18px;border:none;border-radius:6px;font-weight:600;cursor:pointer;';
+            // Add buttons in order: Update, Delete, Cancel
+            modalFooter.appendChild(updateBtn);
+            modalFooter.appendChild(deleteBtn);
+            modalFooter.appendChild(cancelBtn);
+            addBlockForm.appendChild(modalFooter);
+            // Cancel button logic
+            cancelBtn.onclick = function() {
+                addBlockModal.style.display = 'none';
+                editBlockState = null;
+                modalFooter.innerHTML = '';
+            };
+            // Delete button logic
+            deleteBtn.onclick = async function() {
+                const userData = await getUserData();
+                userData.schedule[dayKey].splice(idx, 1);
+                await saveUserData(userData);
+                addBlockModal.style.display = 'none';
+                showNotification('Block deleted');
+                editBlockState = null;
+                modalFooter.innerHTML = '';
+                await populateScheduleCalendar();
+            };
+            // Update button is handled by form submit
+        }
+
+        // Patch addBlockForm submit to handle edit
+        if (addBlockForm) {
+            // Remove any previous submit listeners
+            addBlockForm.onsubmit = async function(e) {
+                e.preventDefault();
+                const day = document.getElementById('block-day').value;
+                const start = document.getElementById('block-start').value;
+                const end = document.getElementById('block-end').value;
+                const locationCode = document.getElementById('block-location').value;
+                const locations = await fetchAllLocations();
+                const locationObj = locations.find(loc => loc.code === locationCode);
+                if (!locationObj) {
+                    showNotification('Location not found!');
+                    return;
+                }
+                const dayMap = {
+                    Monday: 'mon', Tuesday: 'tue', Wednesday: 'wed', Thursday: 'thu', Friday: 'fri', Saturday: 'sat', Sunday: 'sun'
+                };
+                const modelDay = dayMap[day];
+                const userData = await getUserData();
+                if (!userData.schedule) {
+                    userData.schedule = { mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: [] };
+                }
+                if (!userData.schedule[modelDay]) {
+                    userData.schedule[modelDay] = [];
+                }
+                function toMinutes(t) {
+                    const [h, m] = t.split(':').map(Number);
+                    return h * 60 + m;
+                }
+                const newStart = toMinutes(start);
+                const newEnd = toMinutes(end);
+                if (newEnd <= newStart) {
+                    showNotification('Time conflict: End time must be after start time.', true);
+                    return;
+                }
+                let conflict = false;
+                // If editing, skip conflict check for the block being edited
+                const blocksToCheck = editBlockState && modelDay === editBlockState.dayKey ? userData.schedule[modelDay].filter((_, i) => i !== editBlockState.idx) : userData.schedule[modelDay];
+                for (const block of blocksToCheck) {
+                    const blockStart = toMinutes(block.start_time);
+                    const blockEnd = toMinutes(block.end_time);
+                    if ((newStart >= blockStart && newStart < blockEnd) ||
+                        (newEnd > blockStart && newEnd <= blockEnd) ||
+                        (newStart < blockStart && newEnd > blockEnd)) {
+                        conflict = true;
+                        break;
+                    }
+                }
+                if (conflict) {
+                    showNotification('Time conflict: The entered time overlaps with an existing block.', true);
+                    return;
+                }
+                const newBlock = { start_time: start, end_time: end, location: locationObj };
+                if (editBlockState) {
+                    // Editing existing block: update in place
+                    if (modelDay === editBlockState.dayKey) {
+                        userData.schedule[modelDay][editBlockState.idx] = newBlock;
+                    } else {
+                        // Move block to new day
+                        userData.schedule[editBlockState.dayKey].splice(editBlockState.idx, 1);
+                        userData.schedule[modelDay].push(newBlock);
+                    }
+                    userData.schedule[modelDay].sort((a, b) => toMinutes(a.start_time) - toMinutes(b.start_time));
+                    await saveUserData(userData);
+                    addBlockModal.style.display = 'none';
+                    showNotification('Block updated');
+                    editBlockState = null;
+                    // Remove delete button after edit
+                    let modalFooter = addBlockForm.parentElement.querySelector('.modal-footer');
+                    if (modalFooter) {
+                        const deleteBtn = modalFooter.querySelector('#delete-block-btn');
+                        if (deleteBtn) deleteBtn.remove();
+                    }
+                    await populateScheduleCalendar();
+                    return;
+                }
+                // Normal add
+                userData.schedule[modelDay].push(newBlock);
+                userData.schedule[modelDay].sort((a, b) => toMinutes(a.start_time) - toMinutes(b.start_time));
+                await saveUserData(userData);
+                addBlockModal.style.display = 'none';
+                showNotification(`Block added to ${day}: ${start}-${end}`);
+                await populateScheduleCalendar();
+            }
+        }
+        // Initial population on DOMContentLoaded
+        populateScheduleCalendar();
 
     // Dropdown headers
     const checklistHeader = document.getElementById('checklist-header');
@@ -1427,16 +1642,15 @@ function processSyncedData(courses) {
 // Note: openMaps function removed - now using embedded Google Maps iframe
 
 // Show notification
-function showNotification(message) {
+function showNotification(message, conflict = false) {
     const notification = document.createElement('div');
     // If message contains 'Time conflict', use red background
-    const isConflict = message.toLowerCase().includes('conflict');
     notification.style.cssText = `
         position: fixed;
         top: 10px;
         left: 50%;
         transform: translateX(-50%);
-        background: ${isConflict ? '#e74c3c' : '#27ae60'};
+        background: ${conflict ? '#e74c3c' : '#27ae60'};
         color: white;
         padding: 10px 20px;
         border-radius: 5px;

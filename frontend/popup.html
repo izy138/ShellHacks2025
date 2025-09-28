@@ -13,7 +13,7 @@
         }
 
         body {
-            width: 430px;
+            width: 600px;
             height: 755px;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -33,6 +33,7 @@
             height: 100%;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
+            max-height: 100vh;
             overflow-y: auto;
             display: flex;
             flex-direction: column;
@@ -358,6 +359,7 @@
 
         .dropdown-inner {
             padding: 15px;
+            overflow: visible;
         }
 
         /* Course Checklist Styles */
@@ -506,6 +508,14 @@
         }
 
         /* Route Planning Styles */
+        .route-details {
+            margin-top: 10px;
+            height: 260px;
+            max-height: 260px;
+            overflow-y: auto;
+        }
+
+
         .route-item {
             display: flex;
             justify-content: space-between;
@@ -600,10 +610,11 @@
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 8px;
+            gap: 6px;
             margin-top: 10px;
-            min-width: 1050px;
-            overflow-x: auto;
+            width: 100%;
+            min-width: 0;
+            overflow-x: hidden;
         }
 
         .day-column {
@@ -611,11 +622,13 @@
             border: 1px solid #e0e0e0;
             border-radius: 6px;
             background: #f8f9fa;
-            min-width: 140px;
+            min-width: 0;
+            width: 100%;
+            max-width: 1fr;
         }
 
         .day-header {
-            background: #667eea;
+            background: #003366;
             color: white;
             padding: 8px 4px;
             font-weight: 600;
@@ -768,7 +781,7 @@
                 <div class="dropdown-content" id="schedule-content">
                     <div class="dropdown-inner">
                         <button id="add-block-btn" style="width:100%;margin-bottom:10px;padding:8px 0;background:#013677;color:#fff;border:none;border-radius:6px;font-weight:600;cursor:pointer;">+ Add Block</button>
-                        <div id="add-block-modal" style="display:none;position:absolute;left:50%;top:180px;transform:translateX(-50%);z-index:1001;background:#fff;border-radius:10px;box-shadow:0 2px 16px rgba(0,0,0,0.18);padding:24px 20px;min-width:260px;max-width:320px;">
+                        <div id="add-block-modal" style="display:none;position:fixed;left:50%;top:50%;transform:translate(-50%, -50%);z-index:1001;background:#fff;border-radius:10px;box-shadow:0 2px 16px rgba(0,0,0,0.18);padding:24px 20px;min-width:260px;max-width:320px;">
                             <h3 style="margin-bottom:12px;color:#013677;font-size:1.1rem;text-align:center;">Add Schedule Block</h3>
                             <form id="add-block-form">
                                 <label for="block-day">Day of Week</label>
@@ -789,10 +802,7 @@
                                 <select id="block-location" required style="width:100%;margin-bottom:16px;">
                                     <option value="">Select location...</option>
                                 </select>
-                                <div style="display:flex;justify-content:space-between;gap:10px;">
-                                    <button type="submit" style="background:#013677;color:#fff;padding:7px 18px;border:none;border-radius:6px;font-weight:600;cursor:pointer;">Add</button>
-                                    <button type="button" id="close-block-modal" style="background:#eee;color:#013677;padding:7px 18px;border:none;border-radius:6px;font-weight:600;cursor:pointer;">Cancel</button>
-                                </div>
+                                <!-- Modal footer with buttons will be injected by JS -->
                             </form>
                         </div>
                         <div class="schedule-calendar">
@@ -803,43 +813,43 @@
                             <div class="calendar-grid">
                                 <div class="day-column">
                                     <div class="day-header">Mon</div>
-                                    <div class="day-content">
+                                    <div class="day-content" day="mon">
                                         <!-- <div class="schedule-item class">{start_time} - {end_time}<br>{location_code}</div> -->
                                     </div>
                                 </div>
                                 <div class="day-column">
                                     <div class="day-header">Tue</div>
-                                    <div class="day-content">
+                                    <div class="day-content" day="tue">
                                        <!-- <div class="schedule-item class">{start_time} - {end_time}<br>{location_code}</div> -->
                                     </div>
                                 </div>
                                 <div class="day-column">
                                     <div class="day-header">Wed</div>
-                                    <div class="day-content">
+                                    <div class="day-content" day="wed">
                                         <!-- <div class="schedule-item class">{start_time} - {end_time}<br>{location_code}</div> -->
                                     </div>
                                 </div>
                                 <div class="day-column">
                                     <div class="day-header">Thu</div>
-                                    <div class="day-content">
+                                    <div class="day-content" day="thu">
                                         <!-- <div class="schedule-item class">{start_time} - {end_time}<br>{location_code}</div> -->
                                     </div>
                                 </div>
                                 <div class="day-column">
                                     <div class="day-header">Fri</div>
-                                    <div class="day-content">
+                                    <div class="day-content" day="fri">
                                         <!-- <div class="schedule-item class">{start_time} - {end_time}<br>{location_code}</div> -->
                                     </div>
                                 </div>
                                 <div class="day-column">
                                     <div class="day-header">Sat</div>
-                                    <div class="day-content">
+                                    <div class="day-content" day="sat">
                                         <!-- <div class="schedule-item class">{start_time} - {end_time}<br>{location_code}</div> -->
                                     </div>
                                 </div>
                                 <div class="day-column">
                                     <div class="day-header">Sun</div>
-                                    <div class="day-content">
+                                    <div class="day-content" day="sun">
                                         <!-- <div class="schedule-item class">{start_time} - {end_time}<br>{location_code}</div> -->
                                     </div>
                                 </div>
@@ -869,34 +879,46 @@
                 </div>
                 <div class="dropdown-content" id="routes-content">
                     <div class="dropdown-inner">
-                        <h4 style="margin-bottom: 10px; color: #2c3e50; font-size: 0.9rem;">Monday Route</h4>
+                        <label for="route-day-select" style="font-weight:600;margin-bottom:6px;display:block;color:#013677;">Select Day:</label>
+                        <select id="route-day-select" style="width:100%;margin-bottom:14px;padding:6px 8px;border-radius:6px;border:1px solid #ccc;">
+                            <option value="mon">Monday</option>
+                            <option value="tue">Tuesday</option>
+                            <option value="wed">Wednesday</option>
+                            <option value="thu">Thursday</option>
+                            <option value="fri">Friday</option>
+                            <option value="sat">Saturday</option>
+                            <option value="sun">Sunday</option>
+                        </select>
+                        <div class="route-details" id="route-details">
+                            <h4 id="route-day-title" style="margin-bottom: 10px; color: #2c3e50; font-size: 0.9rem;">Monday Route</h4>
 
-                        <div class="route-item">
-                            <div class="route-info">
-                                <div class="route-time">9:30 AM</div>
-                                <div class="route-location">COP 3530 - Parking Garage 6</div>
+                            <div class="route-item">
+                                <div class="route-info">
+                                    <div class="route-time">9:30 AM</div>
+                                    <div class="route-location">COP 3530 - Parking Garage 6</div>
+                                </div>
+                                <div class="route-status">📍 Start</div>
                             </div>
-                            <div class="route-status">📍 Start</div>
-                        </div>
 
-                        <div class="route-item">
-                            <div class="route-info">
-                                <div class="route-time">11:00 AM</div>
-                                <div class="route-location">Walk to Academic Health Center</div>
+                            <div class="route-item">
+                                <div class="route-info">
+                                    <div class="route-time">11:00 AM</div>
+                                    <div class="route-location">Walk to Academic Health Center</div>
+                                </div>
+                                <div class="route-status">🚶‍♂️ 8 min</div>
                             </div>
-                            <div class="route-status">🚶‍♂️ 8 min</div>
-                        </div>
 
-                        <div class="route-item">
-                            <div class="route-info">
-                                <div class="route-time">12:30 PM</div>
-                                <div class="route-location">CAI 4002 - AHC 5 212A</div>
+                            <div class="route-item">
+                                <div class="route-info">
+                                    <div class="route-time">12:30 PM</div>
+                                    <div class="route-location">CAI 4002 - AHC 5 212A</div>
+                                </div>
+                                <div class="route-status">📍 Class</div>
                             </div>
-                            <div class="route-status">📍 Class</div>
-                        </div>
 
-                        <div class="embedded-map" style="margin-bottom: 20px;">
-                            <div id="map" style="width: 100%; height: 200px; border-radius: 8px;"></div>
+                            <div class="embedded-map" style="margin-bottom: 20px;">
+                                <div id="map" style="width: 100%; height: 200px; border-radius: 8px;"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -953,4 +975,12 @@
     <script src="popup.js"></script>
 </body>
 
-</html>
+    <style>
+        .route-details {
+            padding: 10px;
+            background: #f8f8ff;
+            border-radius: 8px;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+            font-size: 0.98em;
+            margin-top: 8px;
+        }
