@@ -1073,18 +1073,25 @@ document.addEventListener('DOMContentLoaded', function() {
         async function populateScheduleCalendar() {
             const userData = await getUserData();
             if (!userData.schedule) return;
-            const days = ['mon','tue','wed','thu','fri','sat','sun'];
+            // Sanitize schedule: remove null/invalid blocks
+            const dayKeys = ['mon','tue','wed','thu','fri','sat','sun'];
+            dayKeys.forEach(d => {
+                userData.schedule[d] = (userData.schedule[d] || []).filter(b => b && typeof b === 'object' && b.start_time && b.end_time && b.location && b.location.code);
+            });
+            const days = dayKeys;
             days.forEach(dayKey => {
                 const dayDiv = document.querySelector(`.day-content[day="${dayKey}"]`);
                 if (!dayDiv) return;
                 dayDiv.innerHTML = '';
                 const blocks = userData.schedule[dayKey] || [];
                 blocks.forEach((block, idx) => {
+                    if (!block || !block.location) return; // guard against malformed entry
                     const blockDiv = document.createElement('div');
                     blockDiv.className = 'schedule-item class';
                     blockDiv.innerHTML = `${block.start_time} - ${block.end_time}<br>${block.location.code}`;
                     blockDiv.style.cursor = 'pointer';
                     blockDiv.addEventListener('click', function() {
+                        if (!block || !block.location) return; // extra safety
                         openEditBlockModal(dayKey, idx, block);
                     });
                     dayDiv.appendChild(blockDiv);
@@ -1097,7 +1104,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectedDay = routeDaySelect.value || 'mon';
             }
             const blocksForRoute = (userData.schedule && userData.schedule[selectedDay]) ? userData.schedule[selectedDay] : [];
-            const placeIds = blocksForRoute.map(block => block.location && block.location.id).filter(Boolean);
+            const placeIds = blocksForRoute.filter(b => b && b.location && b.location.id).map(block => block.location.id);
             if (placeIds.length > 0) {
                 fetchAndDisplayRoute(placeIds);
             } else {
@@ -1108,6 +1115,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Modal logic for editing/deleting blocks
         let editBlockState = null; // { dayKey, idx, block }
         function openEditBlockModal(dayKey, idx, block) {
+            if (!block || !block.location) {
+                console.warn('Attempted to edit invalid block, ignoring.');
+                return;
+            }
             editBlockState = { dayKey, idx, block };
             // Show modal and pre-fill values
             populateLocationDropdown().then(() => {
@@ -1117,9 +1128,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('block-start').value = block.start_time;
                 document.getElementById('block-end').value = block.end_time;
                 document.getElementById('block-location').value = block.location.code;
-                    // Set submit button label to 'Update'
-                    const submitBtn = addBlockForm.querySelector('button[type="submit"]');
-                    if (submitBtn) submitBtn.textContent = 'Update';
+                const submitBtn = addBlockForm.querySelector('button[type="submit"]');
+                if (submitBtn) submitBtn.textContent = 'Update';
             });
             addBlockModal.style.display = 'block';
             // Remove modal footer if present (reset buttons)

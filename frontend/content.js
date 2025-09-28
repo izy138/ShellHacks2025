@@ -99,7 +99,7 @@
         console.log('FIU Degree Tracker: On MyFIU page');
 
         // Add degree tracker widget to dashboard
-        addDashboardWidget();
+        //addDashboardWidget();
 
         // Monitor for navigation changes (SPA behavior)
         observePageChanges();
