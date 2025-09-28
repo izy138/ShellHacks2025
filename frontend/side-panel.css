@@ -1,0 +1,546 @@
+/* FIU Degree Tracker Side Panel Styles */
+
+.fiu-tracker-side-panel {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    width: 430px !important;
+    height: 100vh !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border-left: 3px solid #013677 !important;
+    z-index: 2147483647 !important; /* Maximum z-index */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    color: #333 !important;
+    overflow-y: auto !important;
+    display: none !important;
+    box-shadow: -5px 0 20px rgba(0, 0, 0, 0.3) !important;
+    transition: transform 0.3s ease !important;
+}
+
+.fiu-tracker-side-panel.show {
+    display: flex !important;
+    flex-direction: column !important;
+    transform: translateX(0) !important;
+}
+
+.fiu-tracker-side-panel.hide {
+    transform: translateX(100%) !important;
+}
+
+.fiu-tracker-container {
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px) !important;
+    overflow-y: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.fiu-tracker-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) center/cover no-repeat !important;
+    backdrop-filter: blur(10px) !important;
+    padding: 20px 15px !important;
+    text-align: center !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+    position: relative !important;
+    flex-shrink: 0 !important;
+}
+
+.fiu-tracker-header::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(5px) !important;
+    z-index: -1 !important;
+}
+
+.fiu-tracker-header h1 {
+    color: #ffffff !important;
+    font-size: 1.1rem !important;
+    margin-bottom: 2px !important;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7) !important;
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+.fiu-tracker-content {
+    padding: 15px !important;
+    flex: 1 !important;
+    overflow-y: auto !important;
+}
+
+/* Toggle Button */
+.fiu-tracker-toggle {
+    position: fixed !important;
+    top: 50% !important;
+    right: 20px !important;
+    width: 50px !important;
+    height: 50px !important;
+    background: linear-gradient(135deg, #667eea, #764ba2) !important;
+    border-radius: 50% 0 0 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    box-shadow: -3px 0 15px rgba(0, 0, 0, 0.3) !important;
+    z-index: 2147483646 !important;
+    transition: all 0.3s ease !important;
+    font-size: 20px !important;
+    color: white !important;
+    transform: translateY(-50%) !important;
+}
+
+.fiu-tracker-toggle:hover {
+    transform: translateY(-50%) translateX(-5px) !important;
+    box-shadow: -5px 0 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+.fiu-tracker-toggle.panel-open {
+    right: 450px !important;
+    border-radius: 50% !important;
+}
+
+/* Major Selector */
+.fiu-major-selector {
+    margin-bottom: 10px !important;
+    margin-top: -5px !important;
+}
+
+.fiu-major-selector label {
+    display: block !important;
+    font-weight: 600 !important;
+    margin-bottom: 4px !important;
+    color: #013677 !important;
+    font-size: 0.8rem !important;
+}
+
+.fiu-major-dropdown {
+    width: 100% !important;
+    padding: 6px 10px !important;
+    border: 2px solid #e0e0e0 !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+    background: #ffdb8c !important;
+    cursor: pointer !important;
+    height: 32px !important;
+    border: 2px solid #013677 !important;
+}
+
+.fiu-major-dropdown:focus {
+    outline: none !important;
+    border-color: #3498db !important;
+}
+
+/* AI Agent Section */
+.fiu-ai-agent-section {
+    background: #013677 !important;
+    color: white !important;
+    padding: 15px !important;
+    border-radius: 12px !important;
+    margin-bottom: 10px !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    transition: all 0.3s ease !important;
+}
+
+.fiu-ai-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    cursor: pointer !important;
+    margin-bottom: 5px !important;
+}
+
+.fiu-ai-header h3 {
+    margin: 0 !important;
+    font-size: 1rem !important;
+    color: #f3a806 !important;
+    font-weight: 700 !important;
+}
+
+.fiu-ai-arrow {
+    font-size: 1.2rem !important;
+    color: #f3a806 !important;
+    transition: transform 0.3s ease !important;
+}
+
+.fiu-ai-arrow.rotated {
+    transform: rotate(180deg) !important;
+}
+
+.fiu-ai-content {
+    max-height: 160px !important;
+    overflow: hidden !important;
+    transition: max-height 0.3s ease !important;
+}
+
+.fiu-ai-content.collapsed {
+    max-height: 0 !important;
+    padding: 0 !important;
+}
+
+.fiu-ai-input {
+    width: 100% !important;
+    padding: 8px 12px !important;
+    border: none !important;
+    border-radius: 6px !important;
+    margin-bottom: 6px !important;
+    font-size: 13px !important;
+    height: 32px !important;
+    box-sizing: border-box !important;
+}
+
+.fiu-ai-button {
+    background: #fbe099 !important;
+    color: #1e40af !important;
+    border: 1px solid rgba(30, 64, 175, 0.5) !important;
+    padding: 6px 12px !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    font-size: 12px !important;
+    transition: all 0.3s ease !important;
+    width: 100% !important;
+    height: 32px !important;
+    font-weight: 600 !important;
+}
+
+.fiu-ai-button:hover {
+    background: #eab42c !important;
+    border-color: #1e40af !important;
+    color: #1d4ed8 !important;
+}
+
+.fiu-prompt-templates {
+    display: flex !important;
+    gap: 10px !important;
+    margin: 8px 0 !important;
+    flex-wrap: wrap !important;
+}
+
+.fiu-prompt-btn {
+    flex: 1 !important;
+    min-width: 150px !important;
+    padding: 8px 10px !important;
+    border-radius: 10px !important;
+    border: 2px solid #1e40af !important;
+    background: #ffc13c !important;
+    color: #1e40af !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    font-size: 0.75rem !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.fiu-prompt-btn:hover {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    border-color: #1d4ed8 !important;
+    color: #1d4ed8 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(30, 64, 175, 0.3) !important;
+}
+
+/* Dropdown Sections */
+.fiu-dropdown-section {
+    background: #ffdb8c !important;
+    border: 2px solid #013677 !important;
+    border-radius: 8px !important;
+    margin-bottom: 15px !important;
+    overflow: hidden !important;
+    transition: all 0.3s ease !important;
+}
+
+.fiu-dropdown-header {
+    padding: 15px !important;
+    cursor: pointer !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    background: transparent !important;
+    transition: all 0.3s ease !important;
+}
+
+.fiu-dropdown-header:hover {
+    background: rgba(119, 78, 1, 0.1) !important;
+}
+
+.fiu-dropdown-header.active {
+    background: rgba(247, 178, 4, 0.541) !important;
+    border-bottom: 1px solid #013677 !important;
+}
+
+.fiu-dropdown-title {
+    color: #000000 !important;
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+}
+
+.fiu-dropdown-subtitle {
+    color: #000000 !important;
+    font-size: 0.75rem !important;
+    margin-top: 2px !important;
+}
+
+.fiu-dropdown-arrow {
+    font-size: 1.2rem !important;
+    color: #7f8c8d !important;
+    transition: transform 0.3s ease !important;
+}
+
+.fiu-dropdown-arrow.rotated {
+    transform: rotate(180deg) !important;
+}
+
+.fiu-dropdown-content {
+    max-height: 0 !important;
+    overflow: hidden !important;
+    transition: max-height 0.3s ease !important;
+    background: white !important;
+}
+
+.fiu-dropdown-content.expanded {
+    max-height: 400px !important;
+}
+
+.fiu-dropdown-inner {
+    padding: 15px !important;
+}
+
+/* Course Grid */
+.fiu-course-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 5px !important;
+    margin-bottom: 5px !important;
+    max-height: 300px !important;
+    overflow-y: auto !important;
+}
+
+.fiu-course-checkbox-item {
+    display: flex !important;
+    align-items: center !important;
+    padding: 6px 6px !important;
+    background: #f8f9fa !important;
+    border: 1px solid #e0e0e0 !important;
+    border-radius: 6px !important;
+    font-size: 12px !important;
+    transition: all 0.3s ease !important;
+}
+
+.fiu-course-checkbox-item:hover {
+    background: #e8f4f8 !important;
+    border-color: #3498db !important;
+}
+
+.fiu-course-checkbox-item input {
+    margin-right: 6px !important;
+    transform: scale(0.9) !important;
+    accent-color: #013677 !important;
+}
+
+.fiu-course-checkbox-item.completed {
+    background: #d4edda !important;
+    border-color: #27ae60 !important;
+    opacity: 0.8 !important;
+}
+
+/* Progress Stats */
+.fiu-progress-stats {
+    background: #013677 !important;
+    color: #f3a806 !important;
+    padding: 12px !important;
+    border-radius: 6px !important;
+    text-align: center !important;
+}
+
+.fiu-stats-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    margin-top: 8px !important;
+}
+
+.fiu-stat-item {
+    text-align: center !important;
+}
+
+.fiu-stat-number {
+    font-size: 1.2rem !important;
+    font-weight: bold !important;
+    margin-bottom: 2px !important;
+}
+
+.fiu-stat-label {
+    font-size: 0.7rem !important;
+    opacity: 0.9 !important;
+}
+
+/* Schedule Calendar */
+.fiu-schedule-calendar {
+    background: white !important;
+    border-radius: 8px !important;
+    padding: 15px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.fiu-calendar-grid {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 8px !important;
+    margin-top: 10px !important;
+}
+
+.fiu-day-column {
+    text-align: center !important;
+    border: 1px solid #e0e0e0 !important;
+    border-radius: 6px !important;
+    background: #f8f9fa !important;
+}
+
+.fiu-day-header {
+    background: #667eea !important;
+    color: white !important;
+    padding: 8px 4px !important;
+    font-weight: 600 !important;
+    font-size: 0.8rem !important;
+    border-radius: 6px 6px 0 0 !important;
+}
+
+.fiu-day-content {
+    padding: 8px 4px !important;
+    min-height: 80px !important;
+}
+
+.fiu-schedule-item {
+    margin-bottom: 4px !important;
+    padding: 4px 6px !important;
+    border-radius: 4px !important;
+    font-size: 0.7rem !important;
+    font-weight: 500 !important;
+    line-height: 1.2 !important;
+}
+
+.fiu-schedule-item.class {
+    background: #e8f4f8 !important;
+    color: #2c3e50 !important;
+    border: 1px solid #3498db !important;
+}
+
+/* Route Items */
+.fiu-route-item {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 8px 0 !important;
+    border-bottom: 1px solid #f0f0f0 !important;
+    font-size: 0.8rem !important;
+}
+
+.fiu-route-item:last-child {
+    border-bottom: none !important;
+}
+
+.fiu-route-info {
+    flex: 1 !important;
+}
+
+.fiu-route-time {
+    font-weight: 600 !important;
+    color: #2c3e50 !important;
+}
+
+.fiu-route-location {
+    color: #7f8c8d !important;
+    font-size: 0.75rem !important;
+}
+
+.fiu-route-status {
+    color: #3498db !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+}
+
+/* Search Filters */
+.fiu-search-filters {
+    display: flex !important;
+    gap: 8px !important;
+    margin-bottom: 15px !important;
+}
+
+.fiu-filter-input {
+    flex: 1 !important;
+    padding: 6px 8px !important;
+    border: 1px solid #ddd !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+}
+
+/* Loading Message */
+.fiu-loading-message {
+    text-align: center !important;
+    padding: 20px !important;
+    color: #666 !important;
+    font-style: italic !important;
+}
+
+/* Scrollbar Styling */
+.fiu-tracker-side-panel::-webkit-scrollbar {
+    width: 4px !important;
+}
+
+.fiu-tracker-side-panel::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1) !important;
+}
+
+.fiu-tracker-side-panel::-webkit-scrollbar-thumb {
+    background: rgba(52, 152, 219, 0.5) !important;
+    border-radius: 2px !important;
+}
+
+.fiu-course-grid::-webkit-scrollbar {
+    width: 6px !important;
+}
+
+.fiu-course-grid::-webkit-scrollbar-track {
+    background: #f1f1f1 !important;
+    border-radius: 3px !important;
+}
+
+.fiu-course-grid::-webkit-scrollbar-thumb {
+    background: #c1c1c1 !important;
+    border-radius: 3px !important;
+}
+
+.fiu-course-grid::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8 !important;
+}
+
+/* Page body adjustment when panel is open */
+body.fiu-tracker-panel-open {
+    margin-right: 430px !important;
+    transition: margin-right 0.3s ease !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .fiu-tracker-side-panel {
+        width: 100vw !important;
+        right: -100vw !important;
+    }
+    
+    body.fiu-tracker-panel-open {
+        margin-right: 0 !important;
+    }
+    
+    .fiu-tracker-toggle.panel-open {
+        right: 20px !important;
+    }
+}
