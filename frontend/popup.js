@@ -860,7 +860,7 @@ document.head.appendChild(style);
 // Get completed courses from storage
 async function getCompletedCourses() {
     try {
-        const userData = await getUserData();
+        const userData = getUserData();
         return userData.completedCourses || [];
     } catch (error) {
         console.error('Error getting completed courses:', error);
@@ -1095,12 +1095,12 @@ function updateProgress() {
 }
 
 // Course completion functionality
-document.addEventListener('DOMContentLoaded', async function () {
+document.addEventListener('DOMContentLoaded', function () {
     console.log('DOM loaded, starting course loading...');
     
     // Initialize user data
     const userId = getUserId();
-    const userData = await getUserData();
+    const userData = getUserData();
     console.log('User ID:', userId);
     console.log('User data:', userData);
     
@@ -1112,11 +1112,11 @@ document.addEventListener('DOMContentLoaded', async function () {
     
     // Add event listener for major dropdown changes
     if (majorDropdown) {
-        majorDropdown.addEventListener('change', async function() {
+        majorDropdown.addEventListener('change', function() {
             const selectedMajor = this.value;
-            const userData = await getUserData();
+            const userData = getUserData();
             userData.major = selectedMajor;
-            await saveUserData(userData);
+            saveUserData(userData);
             console.log('Saved major selection:', selectedMajor);
             
             // Reload courses for the new major
@@ -1463,37 +1463,28 @@ function processSyncedData(courses) {
 
 // Show notification
 function showNotification(message) {
-    // Remove any existing notification first
-    const old = document.getElementById('custom-notification');
-    if (old) old.remove();
-
     const notification = document.createElement('div');
-    notification.id = 'custom-notification';
+    // If message contains 'Time conflict', use red background
     const isConflict = message.toLowerCase().includes('conflict');
     notification.style.cssText = `
         position: fixed;
-        top: 18px;
+        top: 10px;
         left: 50%;
         transform: translateX(-50%);
         background: ${isConflict ? '#e74c3c' : '#27ae60'};
         color: white;
-        padding: 12px 28px;
-        border-radius: 7px;
-        font-size: 1rem;
-        z-index: 9999;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.18);
-        opacity: 0;
-        transition: opacity 0.3s;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-size: 0.8rem;
+        z-index: 1000;
+        animation: slideDown 0.3s ease;
     `;
     notification.textContent = message;
     document.body.appendChild(notification);
+
     setTimeout(() => {
-        notification.style.opacity = '1';
-    }, 10);
-    setTimeout(() => {
-        notification.style.opacity = '0';
-        setTimeout(() => notification.remove(), 300);
-    }, 2500);
+        notification.remove();
+    }, 3000);
 }
 
 // Check if user is on FIU website and show relevant features
