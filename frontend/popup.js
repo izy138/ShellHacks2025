@@ -1613,7 +1613,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 
 
 // --- AI Agent wiring (drop-in) ---
-(function () {
+(function TEST22() {
     const API_BASE_URL = 'http://127.0.0.1:8000/api'; // keep your current value
   
     const aiButton = document.querySelector('.ai-button');
@@ -1706,3 +1706,189 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       });
     }
   })();
+
+
+
+  // --- AI Agent wiring (drop-in) ---
+(function TEST() {
+    const API_BASE_URL = 'http://127.0.0.1:8000/api';
+  
+    const aiButton = document.querySelector('.ai-button');
+    const aiInput  = document.querySelector('.ai-input');
+    const aiOut    = document.getElementById('ai-output');
+    const nextBtn  = document.getElementById('next-courses-btn');
+    const reqBtn   = document.getElementById('course-requirements-btn');
+  
+    if (!aiButton || !aiInput || !aiOut) return;
+  
+    // ensure black text for output (in case of dark theme)
+    aiOut.style.color = '#000';
+  
+    // simple local storage session so multi-turn works
+    const getSessionId = () => {
+      try { return localStorage.getItem('adkSessionId') || null; } catch { return null; }
+    };
+    const setSessionId = (sid) => {
+      try { if (sid) localStorage.setItem('adkSessionId', sid); } catch {}
+    };
+  
+    async function sendToAgent(query) {
+      aiOut.textContent = 'Thinking…';
+      aiButton.disabled = true;
+  
+      try {
+        const body = { query };
+        const sid = getSessionId();
+        if (sid) body.session_id = sid; // reuse the same ADK session
+  
+        const res = await fetch(`${API_BASE_URL}/agent/ask`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+  
+        const data = await res.json();
+  
+        if (!res.ok) {
+          aiOut.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+          return;
+        }
+  
+        // persist session id returned by backend
+        if (data.session_id) setSessionId(data.session_id);
+  
+        const answer = data.response ?? data.answer ?? data.output ?? data.result ?? data.text ?? data;
+        aiOut.textContent = typeof answer === 'string' ? answer : JSON.stringify(answer, null, 2);
+  
+      } catch (e) {
+        console.error(e);
+        aiOut.textContent = 'Request failed.';
+      } finally {
+        aiButton.disabled = false;
+      }
+    }
+  
+    // Build a rich “next courses” prompt using checklist + major
+    async function buildNextCoursesPrompt() {
+      // Checked boxes from the checklist (already implemented elsewhere in your file)
+      const completed = getCompletedCoursesFromChecklist(); 
+      // Pull user profile (has major, schedule, etc.)
+      const user = await getUserData();                     
+  
+      const major = user?.major || 'Undeclared';
+      const completedList = completed.length ? completed.join(', ') : 'none yet';
+  
+      // Keep it short but directive so the agent runs your tools:
+      // load_major_template → diff_requirements → get_sections → schedule_solver
+      return (
+  `
+  Given my completed courses so far: ${completedList}.
+  
+  Please recommend required courses I should take next.`
+      );
+    }
+  
+    // Wire the main Ask button
+    aiButton.addEventListener('click', async () => {
+      const q = (aiInput.value || '').trim();
+      if (!q) return;
+      await sendToAgent(q);
+      aiInput.value = '';
+    });
+  
+    // Enter submits (Shift+Enter = newline)
+    aiInput.addEventListener('keydown', async (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const q = (aiInput.value || '').trim();
+        if (!q) return;
+        await sendToAgent(q);
+        aiInput.value = '';
+      }
+    });
+  
+    // Prompt template buttons
+    if (nextBtn) {
+      nextBtn.addEventListener('click', async () => {
+        const prompt = await buildNextCoursesPrompt();
+        aiInput.value = prompt;
+        // Auto-send (optional). If you want the user to review first, comment next line out:
+        await sendToAgent(prompt);
+      });
+    }
+  
+    if (reqBtn) {
+      reqBtn.addEventListener('click', () => {
+        aiInput.value = "Tell me more about <COURSE_CODE>: include description, credits, prerequisites, and corequisites.";
+        // User can replace <COURSE_CODE> and click Ask AI
+      });
+    }
+  })();
+  
+
+// --- Demo-only: simulate thinking + show canned plan for "What should I take next?" ---
+(function () {
+    const nextBtn = document.getElementById('next-courses-btn');
+    const aiOut   = document.getElementById('ai-output');
+    const aiBtn   = document.querySelector('.ai-button');   // disable while "thinking"
+    if (!nextBtn || !aiOut) return;
+  
+    // ensure output is readable on dark themes
+    aiOut.style.color = '#000';
+  
+    nextBtn.addEventListener('click', () => {
+      // disable UI while we "think"
+      nextBtn.disabled = true;
+      if (aiBtn) aiBtn.disabled = true;
+  
+      // Step 0: initial state
+      aiOut.textContent = 'Thinking…';
+  
+      // Fake step-by-step “tool usage”
+      const steps = [
+        'Using tool: load_major_template → loaded CS core requirements.',
+        'Using tool: diff_requirements → computed eligible courses.',
+        'Using tool: get_sections → fetched sample sections.',
+        'Using tool: schedule_solver → scored top plan.'
+      ];
+  
+      // Final canned plan we want to show
+      const finalText =
+  `Here’s a focused plan based on your completed courses:
+  
+  • **Next required courses**
+    - **COT 3100 – Discrete Structures**
+    - **COP 3530 – Data Structures & Algorithms**
+    - **MAC 2312 – Calculus II**
+  
+  • **Electives (pick 2–3 you’re excited about)**
+    - Examples: **Mobile App Dev (COP 4655)**, **Database Management (COP 4710)**,
+      **Intro to AI (CAI 4002)**, **Software Engineering I (CEN 4010)**.
+  
+  Rationale: COP 3337 + MAC 2311 unlock **COT 3100** and **COP 3530** next; with your math progression,
+  **MAC 2312** is also timely. Save 2–3 slots for electives that match your interests.`;
+  
+      // Show steps one by one, then the final output
+      let i = 0;
+      const showNextStep = () => {
+        if (i < steps.length) {
+          // Append next step
+          const current = steps.slice(0, i + 1).join('\n');
+          aiOut.textContent = current;
+          i += 1;
+          setTimeout(showNextStep, 400);   // short cadence per step
+        } else {
+          // small pause before final answer
+          setTimeout(() => {
+            aiOut.textContent = finalText;
+            nextBtn.disabled = false;
+            if (aiBtn) aiBtn.disabled = false;
+          }, 800);
+        }
+      };
+  
+      // Slight delay before first step to make “Thinking…” visible
+      setTimeout(showNextStep, 600);
+    });
+  })();
+  
