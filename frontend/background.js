@@ -41,7 +41,7 @@ chrome.action.onClicked.addListener(function(tab) {
                 // If content script isn't ready, inject it first
                 chrome.scripting.executeScript({
                     target: { tabId: tab.id },
-                    files: ['content.js']
+                    files: ['popup.js']
                 }).then(() => {
                     // Wait a bit for the script to initialize, then send message
                     setTimeout(() => {

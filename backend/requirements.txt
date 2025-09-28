@@ -6,3 +6,4 @@ python-dotenv
 python-multipart
 anthropic
 requests
+google-adk

@@ -123,29 +123,36 @@
     }
 
     function createSidePanel() {
-        // Remove existing panel if it exists
         const existingPanel = document.getElementById('fiu-tracker-side-panel');
-        if (existingPanel) {
-            existingPanel.remove();
-        }
+        if (existingPanel) existingPanel.remove();
 
-        // Create the side panel container
         const sidePanel = document.createElement('div');
         sidePanel.id = 'fiu-tracker-side-panel';
         sidePanel.className = 'fiu-tracker-side-panel';
-        
-        // Create the side panel content directly
-        sidePanel.innerHTML = createSidePanelContent();
-        
-        // Add event listeners for dropdown functionality
-        addDropdownEventListeners(sidePanel);
-        
-        // Set the banner image dynamically
-        setBannerImage(sidePanel);
-        
-        // Load the popup.js functionality
-        loadPopupFunctionality(sidePanel);
-        
+        sidePanel.style.display = 'none';
+        sidePanel.dataset.mode = 'iframe';
+
+        // Iframe approach isolates popup.html environment and prevents duplicate declarations
+        const frame = document.createElement('iframe');
+        frame.id = 'fiu-tracker-frame';
+        frame.src = chrome.runtime.getURL('popup.html');
+        frame.style.cssText = `
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+        `;
+
+        // Simple loading placeholder until iframe loads
+        const loading = document.createElement('div');
+        loading.textContent = 'Loading FIU Planner...';
+        loading.style.cssText = 'padding:12px;font-family:Arial,sans-serif;color:#444;font-size:13px;';
+        sidePanel.appendChild(loading);
+        frame.addEventListener('load', () => {
+            loading.remove();
+        });
+
+        sidePanel.appendChild(frame);
         document.body.appendChild(sidePanel);
     }
 
@@ -195,213 +202,6 @@
                 }, 10);
             }
         }
-    }
-
-    function createSidePanelContent() {
-        return `
-            <div class="fiu-tracker-container">
-                <div class="fiu-tracker-header">
-                    <h1>🎓 FIU Panther Planner</h1>
-                </div>
-
-                <div class="fiu-tracker-content">
-                    <!-- Major Selector -->
-                    <div class="fiu-major-selector">
-                        <label for="fiu-major-dropdown">Select Major</label>
-                        <select id="fiu-major-dropdown" class="fiu-major-dropdown">
-                            <option value="">Select your major...</option>
-                            <option value="computer-science" selected>Computer Science</option>
-                            <option value="information-technology">Information Technology</option>
-                            <option value="cybersecurity">Cybersecurity</option>
-                            <option value="software-engineering">Software Engineering</option>
-                            <option value="data-science">Data Science</option>
-                        </select>
-                    </div>
-
-                    <!-- AI Agent Section -->
-                    <div class="fiu-ai-agent-section">
-                        <div class="fiu-ai-header" id="fiu-ai-header">
-                            <h3><img src="chrome-extension://${chrome.runtime.id}/icons/fiu_panther.png" alt="FIU Panther" style="width: 20px; height: 20px; vertical-align: middle; margin-right: 5px;"> Ask Roary</h3>
-                            <div class="fiu-ai-arrow" id="fiu-ai-arrow">▼</div>
-                        </div>
-                        <div class="fiu-ai-content" id="fiu-ai-content">
-                            <input type="text" class="fiu-ai-input" placeholder="Ask about courses, prerequisites, or planning...">
-
-                            <div class="fiu-prompt-templates">
-                                <button class="fiu-prompt-btn" id="fiu-next-courses-btn">
-                                    What should I take next?
-                                </button>
-                                <button class="fiu-prompt-btn" id="fiu-course-requirements-btn">
-                                    Course requirements
-                                </button>
-                            </div>
-
-                            <button class="fiu-ai-button">Ask AI</button>
-                        </div>
-                    </div>
-
-                    <!-- Class Checklist -->
-                    <div class="fiu-dropdown-section">
-                        <div class="fiu-dropdown-header" id="fiu-checklist-header">
-                            <div>
-                                <div class="fiu-dropdown-title">📚 Class Checklist</div>
-                                <div class="fiu-dropdown-subtitle">Track completed courses for your degree</div>
-                            </div>
-                            <div class="fiu-dropdown-arrow" id="fiu-checklist-arrow">▼</div>
-                        </div>
-                        <div class="fiu-dropdown-content" id="fiu-checklist-content">
-                            <div class="fiu-dropdown-inner">
-                                <div class="fiu-search-filters">
-                                    <input type="text" class="fiu-filter-input" placeholder="Search courses...">
-                                </div>
-
-                                <div class="fiu-course-grid" id="fiu-course-grid">
-                                    <div class="fiu-loading-message">Loading courses...</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Schedule -->
-                    <div class="fiu-dropdown-section">
-                        <div class="fiu-dropdown-header" id="fiu-schedule-header">
-                            <div>
-                                <div class="fiu-dropdown-title">📅 Schedule</div>
-                                <div class="fiu-dropdown-subtitle">Weekly class schedule and calendar</div>
-                            </div>
-                            <div class="fiu-dropdown-arrow" id="fiu-schedule-arrow">▼</div>
-                        </div>
-                        <div class="fiu-dropdown-content" id="fiu-schedule-content">
-                            <div class="fiu-dropdown-inner">
-                                <div class="fiu-schedule-calendar">
-                                    <div class="calendar-header">
-                                        <h4 style="margin-bottom: 10px; color: #2c3e50; font-size: 0.9rem;">This Week's Schedule</h4>
-                                    </div>
-                                    <div class="fiu-calendar-grid">
-                                        <div class="fiu-day-column">
-                                            <div class="fiu-day-header">Mon</div>
-                                            <div class="fiu-day-content">
-                                                <div class="fiu-schedule-item class">9:30 AM<br>COP 3530</div>
-                                                <div class="fiu-schedule-item class">12:30 PM<br>CAI 4002</div>
-                                            </div>
-                                        </div>
-                                        <div class="fiu-day-column">
-                                            <div class="fiu-day-header">Tue</div>
-                                            <div class="fiu-day-content">
-                                                <div class="fiu-schedule-item class">11:00 AM<br>MAD 3512</div>
-                                                <div class="fiu-schedule-item class">2:00 PM<br>COT 3541</div>
-                                            </div>
-                                        </div>
-                                        <div class="fiu-day-column">
-                                            <div class="fiu-day-header">Wed</div>
-                                            <div class="fiu-day-content">
-                                                <div class="fiu-schedule-item class">9:30 AM<br>COP 3530</div>
-                                                <div class="fiu-schedule-item class">12:30 PM<br>CAI 4002</div>
-                                            </div>
-                                        </div>
-                                        <div class="fiu-day-column">
-                                            <div class="fiu-day-header">Thu</div>
-                                            <div class="fiu-day-content">
-                                                <div class="fiu-schedule-item class">11:00 AM<br>MAD 3512</div>
-                                                <div class="fiu-schedule-item class">2:00 PM<br>COT 3541</div>
-                                            </div>
-                                        </div>
-                                        <div class="fiu-day-column">
-                                            <div class="fiu-day-header">Fri</div>
-                                            <div class="fiu-day-content">
-                                                <div class="fiu-schedule-item class">10:00 AM<br>CAP 4052</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Map and Route -->
-                    <div class="fiu-dropdown-section">
-                        <div class="fiu-dropdown-header" id="fiu-routes-header">
-                            <div>
-                                <div class="fiu-dropdown-title">🗺️ Map and Route</div>
-                                <div class="fiu-dropdown-subtitle">Campus navigation and building routes</div>
-                            </div>
-                            <div class="fiu-dropdown-arrow" id="fiu-routes-arrow">▼</div>
-                        </div>
-                        <div class="fiu-dropdown-content" id="fiu-routes-content">
-                            <div class="fiu-dropdown-inner">
-                                <h4 style="margin-bottom: 10px; color: #2c3e50; font-size: 0.9rem;">Monday Route</h4>
-
-                                <div class="fiu-route-item">
-                                    <div class="fiu-route-info">
-                                        <div class="fiu-route-time">9:30 AM</div>
-                                        <div class="fiu-route-location">COP 3530 - Parking Garage 6</div>
-                                    </div>
-                                    <div class="fiu-route-status">📍 Start</div>
-                                </div>
-
-                                <div class="fiu-route-item">
-                                    <div class="fiu-route-info">
-                                        <div class="fiu-route-time">11:00 AM</div>
-                                        <div class="fiu-route-location">Walk to Academic Health Center</div>
-                                    </div>
-                                    <div class="fiu-route-status">🚶‍♂️ 8 min</div>
-                                </div>
-
-                                <div class="fiu-route-item">
-                                    <div class="fiu-route-info">
-                                        <div class="fiu-route-time">12:30 PM</div>
-                                        <div class="fiu-route-location">CAI 4002 - AHC 5 212A</div>
-                                    </div>
-                                    <div class="fiu-route-status">📍 Class</div>
-                                </div>
-
-                                <div class="embedded-map" style="margin-bottom: 20px;">
-                                    <div id="fiu-map" style="width: 100%; height: 200px; border-radius: 8px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #666;">
-                                        🗺️ Google Maps Integration
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Major Tracking -->
-                    <div class="fiu-dropdown-section">
-                        <div class="fiu-dropdown-header" id="fiu-tracking-header">
-                            <div>
-                                <div class="fiu-dropdown-title">📊 Major Tracking</div>
-                                <div class="fiu-dropdown-subtitle">Credits, GPA, semester, prerequisites progress</div>
-                            </div>
-                            <div class="fiu-dropdown-arrow" id="fiu-tracking-arrow">▼</div>
-                        </div>
-                        <div class="fiu-dropdown-content" id="fiu-tracking-content">
-                            <div class="fiu-dropdown-inner">
-                                <div class="fiu-progress-stats">
-                                    <h3 style="font-size: 1rem; margin-bottom: 8px;">📊 Academic Progress</h3>
-                                    <div class="fiu-stats-grid">
-                                        <div class="fiu-stat-item">
-                                            <div class="fiu-stat-number">45</div>
-                                            <div class="fiu-stat-label">Credits Earned</div>
-                                        </div>
-                                        <div class="fiu-stat-item">
-                                            <div class="fiu-stat-number">3.6</div>
-                                            <div class="fiu-stat-label">Current GPA</div>
-                                        </div>
-                                        <div class="fiu-stat-item">
-                                            <div class="fiu-stat-number">4</div>
-                                            <div class="fiu-stat-label">Semesters Left</div>
-                                        </div>
-                                        <div class="fiu-stat-item">
-                                            <div class="fiu-stat-number">85%</div>
-                                            <div class="fiu-stat-label">Prerequisites</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
     }
 
     function loadPopupFunctionality(panel) {
