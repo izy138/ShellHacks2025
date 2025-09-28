@@ -25,6 +25,12 @@ async def create_location(location: Location):
     await insert_location(location)
     return {"status": "success"}
 
+@router.get("/locations")
+async def list_locations():
+    locations = await db.locations.find().to_list(length=100)
+    # Only return code, full_name and id for dropdown
+    return [{"code": l.get("code"), "full_name": l.get("full_name"), "id": l.get("google_maps_place_id")} for l in locations]
+
 @router.get("/locations/{code}")
 async def read_location(code: str):
     location = await get_location(code)
