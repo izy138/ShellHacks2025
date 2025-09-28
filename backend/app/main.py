@@ -162,14 +162,43 @@ async def seed_data():
         return {"status": "error", "message": f"Failed to seed data: {str(e)}"}
 
 
-def _extract_adk_text(adk_json):
+def _extract_adk_text(events):
+    """
+    ADK /run returns a list of events. We want human-readable text.
+    Strategy:
+      1) Walk from the end to the start; find the first event that has any text parts.
+      2) If not found, scan everything for text parts.
+      3) Fallback: return a compact JSON string.
+    """
     try:
-        # ADK returns a list of events; first item -> content.parts[].text
-        parts = adk_json[0].get("content", {}).get("parts", [])
-        texts = [p.get("text") for p in parts if isinstance(p, dict) and "text" in p]
-        return "\n".join(t for t in texts if t)
+        # Helper: join all text parts in an event
+        def join_text_parts(ev):
+            parts = (ev.get("content") or {}).get("parts") or []
+            texts = [p.get("text") for p in parts if isinstance(p, dict) and "text" in p and p.get("text")]
+            return "\n".join(texts).strip()
+
+        # 1) Prefer the last event with text (usually the assistant’s final message)
+        for ev in reversed(events):
+            txt = join_text_parts(ev)
+            if txt:
+                return txt
+
+        # 2) Otherwise, scan in normal order and return the first text we find
+        for ev in events:
+            txt = join_text_parts(ev)
+            if txt:
+                return txt
+
     except Exception:
-        return None
+        pass
+
+    # 3) Nothing found—return the raw payload (helps debugging)
+    import json
+    try:
+        return json.dumps(events, ensure_ascii=False, indent=2)
+    except Exception:
+        return str(events)
+
 
 
 @app.post("/api/agent/ask")

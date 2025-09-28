@@ -1,25 +1,36 @@
 # panther_agent/agent.py
 import os
-
-# Prefer a custom var if present; fall back to GOOGLE_API_KEY
-os.environ["GOOGLE_API_KEY"] = (os.getenv("GOOGLE_API_KEY1"))
+os.environ["GOOGLE_API_KEY"] = os.getenv("GOOGLE_API_KEY1")
 
 from google.adk.agents import Agent
-from .tools import load_major_template, diff_requirements, get_sections, schedule_solver
+from .tools import (
+    get_course_details,
+    get_course_requirements,
+    user_meets_prereqs,
+    get_major_info,
+    get_user_profile,
+    compute_remaining_for_major,
+)
 
 root_agent = Agent(
     name="panther_agent",
     model="gemini-2.0-flash",
     description="FIU class advisor (sample data).",
     instruction=(
-        "You advise FIU students on schedule planning.\n"
-        "Inputs provided: MAJOR, TERM, CAMPUSES, COMPLETED (list of codes), PREFS.\n"
-        "Steps:\n"
-        "1) Call load_major_template(major) then diff_requirements(template, completed) to get ELIGIBLE courses.\n"
-        "2) Call get_sections(term, campuses, eligible) to fetch available sections.\n"
-        "3) Call schedule_solver(sections, prefs) to produce a plan.\n"
-        "Rules: Recommend at most 3 major courses; leave space for electives. "
-        "Return a succinct summary: eligible list, sections considered, and the plan with CRNs/days/times."
+        "You advise FIU students on courses and major progress. "
+        "When the user asks about a COURSE (e.g., prereqs, coreqs, description, credits), "
+        "call get_course_details or get_course_requirements. "
+        "When asked if they can take a course, call user_meets_prereqs with their user_id and the course code. "
+        "When asked 'what should I take next' or similar, call compute_remaining_for_major "
+        "to list remaining required courses and which are eligible right now. "
+        "Always respond succinctly with bullet points when listing multiple items."
     ),
-    tools=[load_major_template, diff_requirements, get_sections, schedule_solver],
+    tools=[
+        get_course_details,
+        get_course_requirements,
+        user_meets_prereqs,
+        get_major_info,
+        get_user_profile,
+        compute_remaining_for_major,
+    ],
 )
