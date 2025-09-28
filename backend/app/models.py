@@ -25,7 +25,13 @@ class Block(BaseModel):
     location: Location
 
 class Schedule(BaseModel):
-    blocks: Dict[str, List[Block]]
+    mon: List[Block] = []
+    tue: List[Block] = []
+    wed: List[Block] = []
+    thu: List[Block] = []
+    fri: List[Block] = []
+    sat: List[Block] = []
+    sun: List[Block] = []
 
 # ----------------- CurrentCourse -----------------
 class CurrentCourse(Course):
@@ -42,7 +48,7 @@ class Major(BaseModel):
 # ----------------- User -----------------
 class User(BaseModel):
     user_id: str
-    blocked_time: Schedule
+    schedule: Schedule
     major: str
     taken_courses: List[str] = []  # list of course codes
     current_courses: List[CurrentCourse] = []

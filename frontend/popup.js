@@ -58,7 +58,13 @@ async function fetchAllLocations() {
     try {
         const response = await fetch(`${API_BASE_URL}/locations`);
         if (!response.ok) throw new Error('Failed to fetch locations');
-        const locations = await response.json();
+        let locations = await response.json();
+        // Normalize to { code, full_name }
+        locations = locations.map(loc => ({
+            code: loc.code || '',
+            full_name: loc.full_name || '',
+            id: loc.id || ''
+        }));
         setCachedData(cacheKey, locations);
         return locations;
     } catch (error) {
@@ -437,22 +443,20 @@ function getUserId() {
     if (!userId) {
         userId = generateUserId();
         localStorage.setItem('fiu_degree_tracker_user_id', userId);
-        // Create user in backend with valid Schedule for blocked_time
+        // Create user in backend with valid Schedule for schedule property
         const defaultSchedule = {
-            blocks: {
-                "Monday": [],
-                "Tuesday": [],
-                "Wednesday": [],
-                "Thursday": [],
-                "Friday": [],
-                "Saturday": [],
-                "Sunday": []
-            }
+            "mon": [],
+            "tue": [],
+            "wed": [],
+            "thu": [],
+            "fri": [],
+            "sat": [],
+            "sun": []
         };
         fetch(`${API_BASE_URL}/users`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId, major: 'COMPSC:BS', taken_courses: [], current_courses: [], blocked_time: defaultSchedule })
+            body: JSON.stringify({ user_id: userId, major: '', taken_courses: [], current_courses: [], schedule: defaultSchedule })
         }).then(res => {
             if (!res.ok) console.error('Failed to create user in backend');
         });
@@ -468,24 +472,23 @@ async function getUserData() {
         if (!res.ok) throw new Error('User not found');
         return await res.json();
     } catch (e) {
+        console.log(e)
         // If not found, create user in backend with valid Schedule for blocked_time
         const defaultSchedule = {
-            blocks: {
-                "Monday": [],
-                "Tuesday": [],
-                "Wednesday": [],
-                "Thursday": [],
-                "Friday": [],
-                "Saturday": [],
-                "Sunday": []
-            }
+            "mon": [],
+            "tue": [],
+            "wed": [],
+            "thu": [],
+            "fri": [],
+            "sat": [],
+            "sun": []
         };
         await fetch(`${API_BASE_URL}/users`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId, major: 'COMPSC:BS', taken_courses: [], current_courses: [], blocked_time: defaultSchedule })
+            body: JSON.stringify({ user_id: userId, major: '', taken_courses: [], current_courses: [], schedule: defaultSchedule })
         });
-        return { user_id: userId, major: 'COMPSC:BS', taken_courses: [], current_courses: [], blocked_time: defaultSchedule };
+        return { user_id: userId, major: '', taken_courses: [], current_courses: [], schedule: defaultSchedule };
     }
 }
 
@@ -914,6 +917,121 @@ function toggleAIDropdown() {
 
 // Add event listeners for dropdown headers
 document.addEventListener('DOMContentLoaded', function() {
+    // Populate location dropdown in Add Block modal
+    async function populateLocationDropdown() {
+        const locationSelect = document.getElementById('block-location');
+        if (!locationSelect) return;
+        locationSelect.innerHTML = '<option value="">Select location...</option>';
+        const locations = await fetchAllLocations();
+        locations.forEach(loc => {
+            const option = document.createElement('option');
+            option.value = loc.code;
+            option.textContent = loc.full_name || loc.code;
+            locationSelect.appendChild(option);
+        });
+    }
+
+    // Add Block modal logic
+    const addBlockBtn = document.getElementById('add-block-btn');
+    const addBlockModal = document.getElementById('add-block-modal');
+    const closeBlockModal = document.getElementById('close-block-modal');
+    const addBlockForm = document.getElementById('add-block-form');
+
+    if (addBlockBtn && addBlockModal) {
+        addBlockBtn.addEventListener('click', function() {
+            populateLocationDropdown();
+            addBlockModal.style.display = 'block';
+        });
+    }
+    if (closeBlockModal && addBlockModal) {
+        closeBlockModal.addEventListener('click', function() {
+            addBlockModal.style.display = 'none';
+        });
+    }
+    if (addBlockForm) {
+        addBlockForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            // Get values
+            const day = document.getElementById('block-day').value;
+            const start = document.getElementById('block-start').value;
+            const end = document.getElementById('block-end').value;
+            const locationCode = document.getElementById('block-location').value;
+
+            // Get full location object from cache
+            const locations = await fetchAllLocations();
+            const locationObj = locations.find(loc => loc.code === locationCode);
+            if (!locationObj) {
+                showNotification('Location not found!');
+                return;
+            }
+
+            // Map day to model key
+            const dayMap = {
+                Monday: 'mon',
+                Tuesday: 'tue',
+                Wednesday: 'wed',
+                Thursday: 'thu',
+                Friday: 'fri',
+                Saturday: 'sat',
+                Sunday: 'sun'
+            };
+            const modelDay = dayMap[day];
+
+            // Get user data and check for time conflicts
+            const userData = await getUserData();
+            if (!userData.schedule) {
+                userData.schedule = {
+                    mon: [], tue: [], wed: [], thu: [], fri: [], sat: [], sun: []
+                };
+            }
+            if (!userData.schedule[modelDay]) {
+                userData.schedule[modelDay] = [];
+            }
+            // Conflict check: neither start nor end falls within any block
+            function toMinutes(t) {
+                const [h, m] = t.split(':').map(Number);
+                return h * 60 + m;
+            }
+            const newStart = toMinutes(start);
+            const newEnd = toMinutes(end);
+            let conflict = false;
+            for (const block of userData.schedule[modelDay]) {
+                const blockStart = toMinutes(block.start_time);
+                const blockEnd = toMinutes(block.end_time);
+                // Check if new start or end falls within an existing block
+                if ((newStart >= blockStart && newStart < blockEnd) ||
+                    (newEnd > blockStart && newEnd <= blockEnd) ||
+                    (newStart < blockStart && newEnd > blockEnd)) {
+                    conflict = true;
+                    break;
+                }
+            }
+            if (conflict) {
+                showNotification('Time conflict: The entered time overlaps with an existing block.');
+                return;
+            }
+
+            // Build block object
+            const newBlock = {
+                start_time: start,
+                end_time: end,
+                location: locationObj
+            };
+            userData.schedule[modelDay].push(newBlock);
+            // Sort the day's blocks by start_time
+            userData.schedule[modelDay].sort((a, b) => {
+                const toMinutes = t => {
+                    const [h, m] = t.split(':').map(Number);
+                    return h * 60 + m;
+                };
+                return toMinutes(a.start_time) - toMinutes(b.start_time);
+            });
+            await saveUserData(userData);
+            addBlockModal.style.display = 'none';
+            showNotification(`Block added to ${day}: ${start}-${end}`);
+            // Optionally, update the schedule UI here
+        });
+    }
     setupMajorDropdown();
     // AI Agent dropdown
     const aiHeader = document.getElementById('ai-header');
@@ -1171,12 +1289,14 @@ function processSyncedData(courses) {
 // Show notification
 function showNotification(message) {
     const notification = document.createElement('div');
+    // If message contains 'Time conflict', use red background
+    const isConflict = message.toLowerCase().includes('conflict');
     notification.style.cssText = `
         position: fixed;
         top: 10px;
         left: 50%;
         transform: translateX(-50%);
-        background: #27ae60;
+        background: ${isConflict ? '#e74c3c' : '#27ae60'};
         color: white;
         padding: 10px 20px;
         border-radius: 5px;
