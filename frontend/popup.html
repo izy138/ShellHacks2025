@@ -661,12 +661,7 @@
         }
     </style>
     <script src="config.js"></script>
-    <script>
-        // Load Google Maps API with key from config
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${CONFIG.GOOGLE_MAPS_API_KEY}&libraries=geometry`;
-        document.head.appendChild(script);
-    </script>
+    <!-- Removed remote Google Maps script injection to comply with MV3 CSP and because rendering now uses custom SVG in popup.js -->
 </head>
 
 <body>

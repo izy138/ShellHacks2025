@@ -106,188 +106,163 @@ async function setupMajorDropdown() {
 // API Configuration
 const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
-// Google Maps and Polyline functionality
-let map;
-let polylines = [];
-let routeMarkers = [];
+// Google Maps and Polyline functionality (Replaced with custom SVG renderer to avoid CSP issues)
+let map = null; // kept for compatibility
+let polylines = []; // will hold SVG polyline elements
+let routeMarkers = []; // marker metadata
+
+// Decode Google-style encoded polyline
+function decodePolyline(encoded) {
+    if (!encoded) return [];
+    const points = [];
+    let index = 0, lat = 0, lng = 0;
+    while (index < encoded.length) {
+        let b, shift = 0, result = 0;
+        do { b = encoded.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+        const dlat = (result & 1) ? ~(result >> 1) : (result >> 1); lat += dlat;
+        shift = 0; result = 0;
+        do { b = encoded.charCodeAt(index++) - 63; result |= (b & 0x1f) << shift; shift += 5; } while (b >= 0x20);
+        const dlng = (result & 1) ? ~(result >> 1) : (result >> 1); lng += dlng;
+        points.push({ lat: lat / 1e5, lng: lng / 1e5 });
+    }
+    return points;
+}
 
 function initMap() {
-    // FIU coordinates
-    const fiuLocation = { lat: 25.7565, lng: -80.3760 };
-    
-    map = new google.maps.Map(document.getElementById('map'), {
-        zoom: 16,
-        center: fiuLocation,
-        mapTypeId: 'roadmap',
-        mapTypeControl: true,
-        mapTypeControlOptions: {
-            style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
-            position: google.maps.ControlPosition.TOP_RIGHT
-        },
-        fullscreenControl: true,
-        fullscreenControlOptions: {
-            position: google.maps.ControlPosition.TOP_LEFT
-        }
-    });
-    
-    // Add custom CSS to make all map controls smaller
-    const style = document.createElement('style');
-    style.textContent = `
-        /* Map type control buttons */
-        .gm-style .gm-style-mtc {
-            font-size: 10px !important;
-        }
-        .gm-style .gm-style-mtc button {
-            font-size: 10px !important;
-            padding: 3px 6px !important;
-            min-width: auto !important;
-            height: 24px !important;
-        }
-        
-        /* Zoom control buttons */
-        .gm-style .gm-zoom-control {
-            font-size: 10px !important;
-        }
-        .gm-style .gm-zoom-control button {
-            width: 24px !important;
-            height: 24px !important;
-            font-size: 12px !important;
-            padding: 0 !important;
-        }
-        
-        /* Fullscreen control button */
-        .gm-style .gm-fullscreen-control {
-            width: 24px !important;
-            height: 24px !important;
-            font-size: 10px !important;
-        }
-        
-        /* Copyright text */
-        .gm-style .gm-style-cc {
-            font-size: 9px !important;
-        }
-        
-        /* Street view control */
-        .gm-style .gm-style-sv {
-            width: 24px !important;
-            height: 24px !important;
-        }
-    `;
-    document.head.appendChild(style);
-    
-    // On refresh, display route for selected day from schedule
+    const container = document.getElementById('map');
+    if (!container) return;
+    container.innerHTML = '';
+    container.style.position = 'relative';
+    container.style.background = '#eef2f5';
+    container.style.backgroundSize = 'cover';
+    container.style.backgroundPosition = 'center';
+    container.style.overflow = 'hidden';
+    // Grid fallback background (will be replaced once a static map is available)
+    container.style.backgroundImage = 'linear-gradient(#fff 0 0), repeating-linear-gradient(0deg,#dfe6ec,#dfe6ec 1px,transparent 1px,transparent 12px), repeating-linear-gradient(90deg,#dfe6ec,#dfe6ec 1px,transparent 1px,transparent 12px)';
+    container.style.backgroundBlendMode = 'multiply';
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', '100%');
+    svg.setAttribute('viewBox', '0 0 100 100');
+    svg.id = 'route-svg';
+    svg.style.display = 'block';
+    svg.style.position = 'relative';
+    svg.style.zIndex = '2';
+    container.appendChild(svg);
+
+    // Load current day route
     const routeDaySelect = document.getElementById('route-day-select');
-    let selectedDay = 'mon';
-    if (routeDaySelect) {
-        selectedDay = routeDaySelect.value || 'mon';
-    }
+    const selectedDay = routeDaySelect ? (routeDaySelect.value || 'mon') : 'mon';
     getUserData().then(userData => {
         const blocks = (userData.schedule && userData.schedule[selectedDay]) ? userData.schedule[selectedDay] : [];
-        const placeIds = blocks.map(block => block.location && block.location.id).filter(Boolean);
-        if (placeIds.length > 0) {
-            fetchAndDisplayRoute(placeIds);
-        } else {
-            // Optionally clear map if no blocks
-            if (window.map) {
-                polylines.forEach(polyline => polyline.setMap(null));
-                polylines = [];
-                routeMarkers.forEach(marker => marker.setMap(null));
-                routeMarkers = [];
-            }
-        }
+        const placeIds = blocks.map(b => b.location && b.location.id).filter(Boolean);
+        if (placeIds.length) fetchAndDisplayRoute(placeIds); else clearRenderedRoute();
     });
 }
 
+function clearRenderedRoute() {
+    const svg = document.getElementById('route-svg');
+    if (svg) svg.innerHTML = '';
+    polylines = [];
+    routeMarkers = [];
+}
+
+function addRouteMarker(position, type) {
+    if (!position) return;
+    routeMarkers.push({ position, type });
+}
+
+// Helper to estimate a zoom level for Static Maps given max span in degrees
+function estimateZoom(maxSpanDegrees) {
+    if (maxSpanDegrees <= 0) return 18;
+    const z = Math.log2(360 / maxSpanDegrees);
+    return Math.max(2, Math.min(20, Math.floor(z)));
+}
 
 function addMultiplePolylines(polylineData) {
-    // Clear existing polylines and markers
-    polylines.forEach(polyline => polyline.setMap(null));
-    polylines = [];
-    routeMarkers.forEach(marker => marker.setMap(null));
-    routeMarkers = [];
-    
-    // FIU colors: Blue and Gold alternating
-    const colors = ['#003366', '#B8860B']; // FIU Blue and Dark Gold
-    
-    polylineData.forEach((data, index) => {
-        try {
-            const path = google.maps.geometry.encoding.decodePath(data.encodedPolyline);
-            const color = colors[index % colors.length];
-            
-            const polyline = new google.maps.Polyline({
-                path: path,
-                geodesic: true,
-                strokeColor: color,
-                strokeOpacity: 1.0,
-                strokeWeight: 4
-            });
-            
-            polyline.setMap(map);
-            polylines.push(polyline);
-            
-            // Add start marker for first polyline
-            if (index === 0 && path.length > 0) {
-                addRouteMarker(path[0], 'start');
-            }
-            
-            // Add end marker for last polyline
-            if (index === polylineData.length - 1 && path.length > 0) {
-                addRouteMarker(path[path.length - 1], 'end');
-            }
-            
-            // Add intermediate waypoint markers (grey dots) for connection points
-            if (index > 0 && path.length > 0) {
-                // Add marker at the start of this segment (which connects to previous segment)
-                addRouteMarker(path[0], 'waypoint');
-            }
-            
-        } catch (error) {
-            console.error(`Error adding polyline ${index}:`, error);
-        }
-    });
-}
+    clearRenderedRoute();
+    const container = document.getElementById('map');
+    const svg = document.getElementById('route-svg');
+    if (!container || !svg) return;
+    if (!polylineData || !polylineData.length) return;
 
-// Function to add route markers (start/end/waypoint)
-function addRouteMarker(position, type) {
-    let markerColor, markerSize, title;
-    
-    switch(type) {
-        case 'start':
-            markerColor = '#27ae60'; // Green
-            markerSize = 8;
-            title = 'Route Start';
-            break;
-        case 'end':
-            markerColor = '#e74c3c'; // Red
-            markerSize = 8;
-            title = 'Route End';
-            break;
-        case 'waypoint':
-            markerColor = '#95a5a6'; // Grey
-            markerSize = 6; // Slightly smaller for waypoints
-            title = 'Route Waypoint';
-            break;
-        default:
-            markerColor = '#95a5a6';
-            markerSize = 6;
-            title = 'Route Point';
+    // Decode all legs / segments
+    const colors = ['#003366', '#B8860B']; // FIU blue & gold
+    const segments = polylineData.map((seg, i) => {
+        const encoded = seg.encodedPolyline || seg.polyline || '';
+        const pts = decodePolyline(encoded);
+        return { pts, encoded, meta: seg, color: colors[i % colors.length] };
+    }).filter(s => s.pts.length);
+    if (!segments.length) return;
+
+    // Compute bounds
+    let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+    segments.forEach(seg => seg.pts.forEach(p => { if (p.lat < minLat) minLat = p.lat; if (p.lat > maxLat) maxLat = p.lat; if (p.lng < minLng) minLng = p.lng; if (p.lng > maxLng) maxLng = p.lng; }));
+    const latSpan = maxLat - minLat || 1e-6; const lngSpan = maxLng - minLng || 1e-6; const maxSpan = Math.max(latSpan, lngSpan);
+
+    // Optional Static Maps background if key defined in window.CONFIG
+    const STATIC_KEY = (window.CONFIG && (CONFIG.GOOGLE_MAPS_API_KEY || CONFIG.STATIC_MAPS_API_KEY) && (CONFIG.GOOGLE_MAPS_API_KEY !== 'REPLACE_WITH_REAL_KEY')) ? (CONFIG.GOOGLE_MAPS_API_KEY || CONFIG.STATIC_MAPS_API_KEY) : null;
+    if (STATIC_KEY) {
+        const centerLat = (minLat + maxLat) / 2; const centerLng = (minLng + maxLng) / 2;
+        let zoom = estimateZoom(maxSpan * 1.35); // padding factor
+        const w = container.clientWidth || 400; const h = container.clientHeight || 220;
+        const sizeW = Math.min(640, Math.max(100, w));
+        const sizeH = Math.min(640, Math.max(100, h));
+        const pathParams = segments.map(seg => `path=${encodeURIComponent(`weight:4|color:0x${seg.color.replace('#','') }FF|enc:${seg.encoded}`)}`);
+        const start = segments[0].pts[0];
+        const end = segments[segments.length - 1].pts[segments[segments.length - 1].pts.length - 1];
+        const markers = [
+            'markers=' + encodeURIComponent(`scale:1|color:green|${start.lat},${start.lng}`),
+            'markers=' + encodeURIComponent(`scale:1|color:red|${end.lat},${end.lng}`)
+        ];
+        const base = `https://maps.googleapis.com/maps/api/staticmap?center=${centerLat},${centerLng}&zoom=${zoom}&size=${sizeW}x${sizeH}&maptype=roadmap&scale=2`;
+        const url = `${base}&${[...pathParams, ...markers].join('&')}&key=${STATIC_KEY}`;
+        container.style.backgroundImage = `url('${url}')`;
+        container.style.backgroundSize = 'cover';
+        container.style.backgroundPosition = 'center';
     }
-    
-    const marker = new google.maps.Marker({
-        position: position,
-        map: map,
-        icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: markerSize,
-            fillColor: markerColor,
-            fillOpacity: 1,
-            strokeColor: '#ffffff',
-            strokeWeight: 1.5
-        },
-        title: title
+
+    // Project to SVG viewBox (0..100)
+    const PAD = 4;
+    function project(p) {
+        const x = PAD + ((p.lng - minLng) / lngSpan) * (100 - 2 * PAD);
+        const y = PAD + ((1 - (p.lat - minLat) / latSpan)) * (100 - 2 * PAD);
+        return { x, y };
+    }
+
+    // Draw polylines
+    segments.forEach(seg => {
+        const pts = seg.pts.map(project);
+        const pl = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+        pl.setAttribute('points', pts.map(pt => `${pt.x},${pt.y}`).join(' '));
+        pl.setAttribute('fill', 'none');
+        pl.setAttribute('stroke', seg.color);
+        pl.setAttribute('stroke-width', '2.5');
+        pl.setAttribute('stroke-linecap', 'round');
+        pl.setAttribute('stroke-linejoin', 'round');
+        svg.appendChild(pl);
+        polylines.push(pl);
     });
-    
-    routeMarkers.push(marker);
+
+    // Build marker metadata (reuse existing addRouteMarker interface)
+    segments.forEach((seg, idx) => {
+        if (idx === 0) addRouteMarker(seg.pts[0], 'start');
+        if (idx === segments.length - 1) addRouteMarker(seg.pts[seg.pts.length - 1], 'end');
+        if (idx > 0) addRouteMarker(seg.pts[0], 'waypoint');
+    });
+
+    // Render markers as SVG circles
+    routeMarkers.forEach(m => {
+        const { x, y } = project(m.position);
+        let color = '#95a5a6', r = 3.2;
+        if (m.type === 'start') { color = '#27ae60'; r = 4.2; }
+        else if (m.type === 'end') { color = '#e74c3c'; r = 4.2; }
+        const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', r);
+        c.setAttribute('fill', color); c.setAttribute('stroke', '#ffffff'); c.setAttribute('stroke-width', '1');
+        svg.appendChild(c);
+    });
 }
 
 // Function to fetch real route data from API and display with alternating colors
@@ -1608,4 +1583,3 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       });
     }
   })();
-  
