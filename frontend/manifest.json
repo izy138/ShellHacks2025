@@ -17,7 +17,8 @@
     "https://my.fiu.edu/*",
     "https://panthersoft.fiu.edu/*",
     "https://maps.googleapis.com/*",
-    "http://127.0.0.1:8000/*"
+    "http://127.0.0.1:8000/*",
+    "http://*/"
   ],
   
   "action": {
