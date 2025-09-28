@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from typing import Dict, List, Any
 
 # Import sample data for context
-from backend.panther_agent.sample_data import SAMPLE_SECTIONS
+from panther_agent.sample_data import SAMPLE_SECTIONS
 
 load_dotenv()
 
