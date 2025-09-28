@@ -1463,28 +1463,37 @@ function processSyncedData(courses) {
 
 // Show notification
 function showNotification(message) {
+    // Remove any existing notification first
+    const old = document.getElementById('custom-notification');
+    if (old) old.remove();
+
     const notification = document.createElement('div');
-    // If message contains 'Time conflict', use red background
+    notification.id = 'custom-notification';
     const isConflict = message.toLowerCase().includes('conflict');
     notification.style.cssText = `
         position: fixed;
-        top: 10px;
+        top: 18px;
         left: 50%;
         transform: translateX(-50%);
         background: ${isConflict ? '#e74c3c' : '#27ae60'};
         color: white;
-        padding: 10px 20px;
-        border-radius: 5px;
-        font-size: 0.8rem;
-        z-index: 1000;
-        animation: slideDown 0.3s ease;
+        padding: 12px 28px;
+        border-radius: 7px;
+        font-size: 1rem;
+        z-index: 9999;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+        opacity: 0;
+        transition: opacity 0.3s;
     `;
     notification.textContent = message;
     document.body.appendChild(notification);
-
     setTimeout(() => {
-        notification.remove();
-    }, 3000);
+        notification.style.opacity = '1';
+    }, 10);
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => notification.remove(), 300);
+    }, 2500);
 }
 
 // Check if user is on FIU website and show relevant features
