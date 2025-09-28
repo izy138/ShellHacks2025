@@ -235,69 +235,7 @@
                 console.log('Test API data:', testData);
             }
 
-            // Load all courses from the Computer Science major requirements
-            const csMajorCourses = [
-                'COP 2210', 'COP 3337', 'COP 3530', 'COP 4338', 'COP 4610',
-                'MAC 2311', 'MAC 2312', 'STA 3033', 'COT 3100', 'MAD 2104',
-                'CDA 3102', 'CNT 4713', 'CEN 4010', 'CEN 4021', 'CEN 4072',
-                'CAI 4002', 'CAI 4105', 'CAI 4304', 'COP 4710', 'COP 4751',
-                'CAP 4710', 'CIS 4203', 'CIS 4731', 'COP 4534', 'MAD 3512',
-                'COT 3541', 'COP 4655', 'COP 4226', 'CAP 4052', 'CAP 4506',
-                'COP 4520', 'COT 4601', 'CAP 4770', 'CAP 4104', 'CAP 4453',
-                'CDA 4625', 'CEN 4083', 'CAP 4830', 'ENC 3249', 'CGS 3095',
-                'CGS 1920', 'CIS 3950', 'CIS 4951'
-            ];
-
-            const courses = [];
-            let loadedCount = 0;
-            let failedCount = 0;
-
-            console.log(`Attempting to load ${csMajorCourses.length} courses from CS major requirements...`);
-
-            // Try to load each course individually
-            for (let i = 0; i < csMajorCourses.length; i++) {
-                const courseCode = csMajorCourses[i];
-                
-                // Update loading message with progress
-                if (i % 5 === 0) { // Update every 5 courses
-                    courseGrid.innerHTML = `<div class="fiu-loading-message">Loading courses from database... (${i + 1}/${csMajorCourses.length})</div>`;
-                }
-                try {
-                    const url = `http://127.0.0.1:8000/api/courses/${encodeURIComponent(courseCode)}`;
-                    console.log(`Fetching course: ${courseCode} from ${url}`);
-                    
-                    const response = await fetch(url, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        }
-                    });
-
-                    console.log(`Response for ${courseCode}:`, response.status, response.statusText);
-
-                    if (response.ok) {
-                        const course = await response.json();
-                        console.log(`Loaded course ${courseCode}:`, course);
-                        courses.push({
-                            code: course.code,
-                            name: course.name || course.title || 'Course',
-                            completed: false // Default to not completed
-                        });
-                        loadedCount++;
-                    } else {
-                        const errorText = await response.text();
-                        console.log(`Failed to load ${courseCode}:`, response.status, errorText);
-                        failedCount++;
-                    }
-                } catch (error) {
-                    console.error(`Error loading course ${courseCode}:`, error);
-                    failedCount++;
-                }
-            }
-
-            console.log(`Loaded ${loadedCount} courses from backend, ${failedCount} courses not found in database`);
-
-            // Clear loading message
+            // ...existing code to load courses from backend (removed hardcoded sample course list)...
             courseGrid.innerHTML = '';
 
             if (courses.length > 0) {
@@ -337,25 +275,7 @@
     }
 
     function loadSampleCourseData(courseGrid) {
-        const courses = [
-            { code: 'COP 2210', name: 'Programming I', completed: true },
-            { code: 'COP 3337', name: 'Programming II', completed: true },
-            { code: 'COP 3530', name: 'Data Structures', completed: false },
-            { code: 'MAC 2311', name: 'Calculus I', completed: true },
-            { code: 'MAC 2312', name: 'Calculus II', completed: true },
-            { code: 'STA 3033', name: 'Probability & Statistics', completed: false }
-        ];
-
-        courseGrid.innerHTML = '';
-        courses.forEach(course => {
-            const courseItem = document.createElement('div');
-            courseItem.className = `fiu-course-checkbox-item ${course.completed ? 'completed' : ''}`;
-            courseItem.innerHTML = `
-                <input type="checkbox" ${course.completed ? 'checked' : ''}>
-                <span>${course.code}<br><small>${course.name}</small></span>
-            `;
-            courseGrid.appendChild(courseItem);
-        });
+        courseGrid.innerHTML = '<div class="fiu-loading-message">No courses found in database.</div>';
     }
 
     async function toggleCourseCompletion(courseCode, completed) {
