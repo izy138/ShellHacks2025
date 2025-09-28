@@ -775,23 +775,6 @@ function createCourseItem(courseCode, courseDetails, isCompleted = false) {
 
 // Add event listeners to all checkboxes
 function addCheckboxEventListeners() {
-    document.querySelectorAll('.course-checkbox-item input').forEach(checkbox => {
-        checkbox.addEventListener('change', function () {
-            const item = this.closest('.course-checkbox-item');
-            const courseCode = this.getAttribute('data-course-code');
-
-            if (this.checked) {
-                item.classList.add('completed');
-                saveCompletedCourse(courseCode);
-            } else {
-                item.classList.remove('completed');
-                removeCompletedCourse(courseCode);
-            }
-            updateProgress();
-        });
-    });
-}
-    function addCheckboxEventListeners() {
         document.querySelectorAll('.course-checkbox-item input').forEach(checkbox => {
             checkbox.addEventListener('change', async function () {
                 const item = this.closest('.course-checkbox-item');
@@ -851,6 +834,18 @@ function addCheckboxEventListeners() {
                     }
                 });
                 updateProgress();
+                
+                // Trigger AI recommendation update if AI response area is visible
+                const responseArea = document.getElementById('ai-response-area');
+                if (responseArea && responseArea.style.display !== 'none') {
+                    // Auto-refresh recommendations when checklist changes
+                    setTimeout(async () => {
+                        const completedCourses = getCompletedCoursesFromChecklist();
+                        const courseList = completedCourses.length > 0 ? completedCourses.join(', ') : 'none yet';
+                        const message = `Given the courses I've completed (${courseList}), what courses should I take next to stay on track for graduation? Please recommend specific courses from my degree requirements.`;
+                        await sendAIQuery(message);
+                    }, 1000); // Small delay to ensure data is saved
+                }
             });
         });
     }
@@ -1062,10 +1057,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const nextCoursesBtn = document.getElementById('next-courses-btn');
     const courseRequirementsBtn = document.getElementById('course-requirements-btn');
     const aiInput = document.querySelector('.ai-input');
+    const clearResponseBtn = document.getElementById('clear-response-btn');
     
     if (nextCoursesBtn && aiInput) {
-        nextCoursesBtn.addEventListener('click', () => {
-            aiInput.value = "Given the courses I've completed, what courses should I take next to stay on track for graduation?";
+        nextCoursesBtn.addEventListener('click', async () => {
+            // Get completed courses from checklist
+            const completedCourses = getCompletedCoursesFromChecklist();
+            const courseList = completedCourses.length > 0 ? completedCourses.join(', ') : 'none yet';
+            
+            const message = `Given the courses I've completed (${courseList}), what courses should I take next to stay on track for graduation? Please recommend specific courses from my degree requirements.`;
+            aiInput.value = message;
+            
+            // Automatically send the query
+            await sendAIQuery(message);
         });
     }
     
@@ -1073,6 +1077,10 @@ document.addEventListener('DOMContentLoaded', function() {
         courseRequirementsBtn.addEventListener('click', () => {
             aiInput.value = "What are the requirements for this course? Include prerequisites and corequisites.";
         });
+    }
+    
+    if (clearResponseBtn) {
+        clearResponseBtn.addEventListener('click', clearAIResponse);
     }
 });
 
@@ -1139,19 +1147,23 @@ document.addEventListener('DOMContentLoaded', function () {
     const aiInput = document.querySelector('.ai-input');
     
     if (aiButton && aiInput) {
-        aiButton.addEventListener('click', function () {
+        aiButton.addEventListener('click', async function () {
             const query = aiInput.value.trim();
             if (query) {
-                alert(`AI: Looking up information about "${query}"...`);
+                await sendAIQuery(query);
                 aiInput.value = '';
             }
         });
 
         // Allow Enter key to submit AI query (Shift+Enter for new line)
-        aiInput.addEventListener('keydown', function (e) {
+        aiInput.addEventListener('keydown', async function (e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                aiButton.click();
+                const query = aiInput.value.trim();
+                if (query) {
+                    await sendAIQuery(query);
+                    aiInput.value = '';
+                }
             }
         });
     }
@@ -1236,6 +1248,169 @@ function updateProgress() {
 
     // Update progress displays
     console.log(`Progress: ${completed}/${total} (${percentage}%)`);
+}
+
+// AI Query function
+async function sendAIQuery(query) {
+    try {
+        // Show loading state
+        showNotification('🤔 Asking Roary...');
+        
+        // Get user ID for context
+        const userId = getUserId();
+        
+        const response = await fetch(`${API_BASE_URL}/ai/chat`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                message: query,
+                user_id: userId
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('AI Response:', data);
+        
+        // Show response in the AI response area
+        displayAIResponse(data.response || 'Sorry, I couldn\'t process your question right now.');
+
+    } catch (error) {
+        console.error('Error sending AI query:', error);
+        showNotification('Sorry, I\'m having trouble connecting to Roary. Please try again later.');
+    }
+}
+
+// Display AI response in the dedicated response area
+function displayAIResponse(response) {
+    const responseArea = document.getElementById('ai-response-area');
+    const responseContent = document.getElementById('ai-response-content');
+    
+    if (responseArea && responseContent) {
+        responseContent.textContent = response;
+        responseArea.style.display = 'block';
+        
+        // Scroll to the response area
+        responseArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+// Clear AI response
+function clearAIResponse() {
+    const responseArea = document.getElementById('ai-response-area');
+    if (responseArea) {
+        responseArea.style.display = 'none';
+    }
+}
+
+// Get completed courses from the checklist
+function getCompletedCoursesFromChecklist() {
+    const completedCourses = [];
+    const checkboxes = document.querySelectorAll('.course-checkbox-item input[type="checkbox"]:checked');
+    
+    checkboxes.forEach(checkbox => {
+        const courseCode = checkbox.getAttribute('data-course-code');
+        if (courseCode) {
+            completedCourses.push(courseCode);
+        }
+    });
+    
+    return completedCourses;
+}
+
+// Show AI response in a detailed popup (keeping for backward compatibility)
+function showAIResponse(response) {
+    // Create a modal-like response
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    `;
+    
+    const content = document.createElement('div');
+    content.style.cssText = `
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        max-width: 500px;
+        max-height: 400px;
+        overflow-y: auto;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        position: relative;
+    `;
+    
+    const header = document.createElement('div');
+    header.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #013677;
+    `;
+    
+    const title = document.createElement('h3');
+    title.textContent = '🤖 Roary\'s Response';
+    title.style.cssText = `
+        margin: 0;
+        color: #013677;
+        font-size: 1.1rem;
+    `;
+    
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕';
+    closeBtn.style.cssText = `
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        cursor: pointer;
+        color: #666;
+        padding: 0;
+        width: 25px;
+        height: 25px;
+    `;
+    
+    const responseText = document.createElement('div');
+    responseText.textContent = response;
+    responseText.style.cssText = `
+        line-height: 1.5;
+        color: #333;
+        white-space: pre-wrap;
+    `;
+    
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+    content.appendChild(header);
+    content.appendChild(responseText);
+    modal.appendChild(content);
+    
+    // Close modal functionality
+    const closeModal = () => {
+        modal.remove();
+    };
+    
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    
+    document.body.appendChild(modal);
+    
+    // Auto-close after 10 seconds
+    setTimeout(closeModal, 10000);
 }
 
 // Open PantherSoft registration

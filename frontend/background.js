@@ -30,6 +30,34 @@ function initializeExtension() {
     console.log('Extension initialized with default data');
 }
 
+// Handle action button click (toggle side panel)
+chrome.action.onClicked.addListener(function(tab) {
+    // Check if we're on a supported page
+    if (tab.url && (tab.url.includes('fiu.edu') || tab.url.includes('localhost'))) {
+        // Send message to content script to toggle side panel
+        chrome.tabs.sendMessage(tab.id, { action: 'toggleSidePanel' })
+            .catch(error => {
+                console.log('Content script not ready, injecting it first...');
+                // If content script isn't ready, inject it first
+                chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    files: ['content.js']
+                }).then(() => {
+                    // Wait a bit for the script to initialize, then send message
+                    setTimeout(() => {
+                        chrome.tabs.sendMessage(tab.id, { action: 'toggleSidePanel' })
+                            .catch(err => console.log('Still unable to send message:', err));
+                    }, 100);
+                }).catch(err => console.log('Failed to inject content script:', err));
+            });
+    } else {
+        // If not on FIU page, open a new tab to FIU
+        chrome.tabs.create({
+            url: 'https://my.fiu.edu'
+        });
+    }
+});
+
 // Handle messages from content scripts and popup
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     console.log('Background received message:', request);
@@ -42,7 +70,15 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
             handleTranscriptDataSync(request.data);
             break;
         case 'openPopup':
-            chrome.action.openPopup();
+            // Toggle side panel instead of opening popup
+            chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                if (tabs[0]) {
+                    chrome.tabs.sendMessage(tabs[0].id, { action: 'toggleSidePanel' })
+                        .catch(error => {
+                            console.log('Content script not ready for openPopup:', error);
+                        });
+                }
+            });
             break;
         case 'scheduleNotification':
             scheduleClassReminder(request.classInfo);
