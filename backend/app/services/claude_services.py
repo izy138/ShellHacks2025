@@ -3,6 +3,9 @@ import anthropic
 from dotenv import load_dotenv
 from typing import Dict, List, Any
 
+# Import sample data for context
+from backend.panther_agent.sample_data import SAMPLE_SECTIONS
+
 load_dotenv()
 
 # Initialize Claude client
@@ -16,7 +19,11 @@ else:
 class ClaudeAgent:
     def __init__(self):
         self.client = client
-        self.system_prompt = """You are Roary, FIU's AI academic advisor. You help FIU students with:
+        
+        # Format the sample sections data for context
+        sections_context = self._format_sections_context()
+        
+        self.system_prompt = f"""You are Roary, FIU's AI academic advisor. You help FIU students with:
 - Course planning and scheduling
 - Degree requirements and prerequisites
 - Academic progress tracking
@@ -38,7 +45,35 @@ When providing course recommendations:
 - Prioritize courses that are prerequisites for future required courses
 - Provide specific course codes and explain why each recommendation makes sense
 
-Always be helpful, friendly, and provide accurate information about FIU academics."""
+Always be helpful, friendly, and provide accurate information about FIU academics.
+
+CURRENT AVAILABLE COURSE SECTIONS (2026 Spring):
+{sections_context}
+
+Use this course information when helping students with scheduling, course selection, and academic planning. The sections include course codes, titles, credits, campus locations, meeting days/times, and instructors."""
+
+    def _format_sections_context(self) -> str:
+        """Format the sample sections data for inclusion in the system prompt"""
+        if not SAMPLE_SECTIONS:
+            return "No course sections available at this time."
+        
+        formatted_sections = []
+        for section in SAMPLE_SECTIONS:
+            days_str = ", ".join(section.get('days', [])) if section.get('days') else "Online/Asynchronous"
+            time_str = f"{section.get('start', 'TBA')} - {section.get('end', 'TBA')}" if section.get('start') != '00:00' else "Online/Asynchronous"
+            
+            section_info = (
+                f"CRN: {section.get('crn', 'N/A')} | "
+                f"Course: {section.get('course', 'N/A')} - {section.get('title', 'N/A')} | "
+                f"Credits: {section.get('credits', 'N/A')} | "
+                f"Campus: {section.get('campus', 'N/A')} | "
+                f"Days: {days_str} | "
+                f"Time: {time_str} | "
+                f"Instructor: {section.get('instructor', 'TBA')}"
+            )
+            formatted_sections.append(section_info)
+        
+        return "\n".join(formatted_sections)
 
     async def chat(self, user_message: str, context: Dict[str, Any] = None) -> str:
         """
