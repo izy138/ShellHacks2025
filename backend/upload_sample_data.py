@@ -8,8 +8,56 @@ major_data = {
     "major_id": "COMPSC:BS",
     "name": "Bachelor of Science in Computer Science",
     "required_courses": [
-        "MAC1105", "BSC2010", "BSC2010L", "ENC1101", "ENC1102", "MAC1140", "COP2210", "MAC1114", "MAC2311", "BSC2011", "BSC2011L", "MAC2312", "STA3033", "CGS1920", "COT3100", "ENC3249", "COP3337", "CDA3102", "CGS3095", "CEN4010", "CNT4713", "COP3337", "COP3530", "COP4338", "COP4555", "COP4610", "CIS3950", "CIS4951"
-    ]
+    # Math & Writing Foundations
+    "MAC1105",      # College Algebra
+    "ENC1101",      # Writing and Rhetoric I
+    "ENC1102",      # Writing and Rhetoric II
+    "MAC1140",      # PreCalc Algebra
+    "MAC1114",      # Trigonometry
+
+    # Science Foundations
+    "BSC2010",      # Gen Bio I
+    "BSC2010L",     # Gen Bio I Lab
+    "BSC2011",      # Gen Bio II
+    "BSC2011L",     # Gen Bio Lab II
+
+    # Programming Foundations
+    "COP2210",      # Programming I
+    "COP2250",      # Java Programming
+    "CGS1920",      # Intro to Computing
+
+    # Discrete Math & Core CS
+    "COT3100",      # Discrete Structures
+    "COP3337",      # Computer Programming II
+
+    # Calculus Sequence
+    "MAC2311",      # Calc I
+    "MAC2312",      # Calc II
+    "STA3033",      # Intro to Prob & Stats for CS
+
+    # Writing for CS
+    "ENC3249",      # Prof. & Techn. Writing for CS
+
+    # Computer Architecture & Systems
+    "CDA3102",      # Computer Architecture
+
+    # Ethics/Tech in Society
+    "CGS3095",      # Technology in the Global Arena
+
+    # Software Engineering & Data Structures
+    "CEN4010",      # Software Eng I
+    "COP3530",      # Data Structures
+
+    # Advanced CS
+    "COP4338",      # Systems Programming
+    "COP4555",      # Principles of Prog. Langs.
+    "COP4610",      # OS Principles
+    "CNT4713",      # Net-centric Computing
+
+    # Capstone
+    "CIS3950",      # Capstone I
+    "CIS4951"       # Capstone II
+]
 }
 
 # Example course data
