@@ -117,8 +117,6 @@
             border-radius: 12px;
             margin-bottom: 10px;
             width: 100%;
-            min-width: 400px;
-            max-width: 400px;
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
@@ -265,6 +263,7 @@
             width: 100%;
             flex-shrink: 0;
             box-sizing: border-box;
+            justify-content: center;
         }
 
         .prompt-btn {
@@ -672,6 +671,30 @@
 </head>
 
 <body>
+    <div id="add-block-modal" style="display:none;position:fixed;left:50%;top:50%;transform:translate(-50%, -50%);z-index:10001;background:#fff;border-radius:10px;box-shadow:0 2px 16px rgba(0,0,0,0.18);padding:24px 20px;min-width:260px;max-width:320px;">
+        <h3 style="margin-bottom:12px;color:#013677;font-size:1.1rem;text-align:center;">Add Schedule Block</h3>
+        <form id="add-block-form">
+            <label for="block-day">Day of Week</label>
+            <select id="block-day" style="width:100%;margin-bottom:10px;">
+                <option value="Monday">Monday</option>
+                <option value="Tuesday">Tuesday</option>
+                <option value="Wednesday">Wednesday</option>
+                <option value="Thursday">Thursday</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+                <option value="Sunday">Sunday</option>
+            </select>
+            <label for="block-start">Start Time</label>
+            <input type="time" id="block-start" required style="width:100%;margin-bottom:10px;">
+            <label for="block-end">End Time</label>
+            <input type="time" id="block-end" required style="width:100%;margin-bottom:10px;">
+            <label for="block-location">Location</label>
+            <select id="block-location" required style="width:100%;margin-bottom:16px;">
+                <option value="">Select location...</option>
+            </select>
+            <!-- Modal footer with buttons will be injected by JS -->
+        </form>
+    </div>
     <div class="container">
         <div class="header">
             <h1>🎓 FIU Panther Planner</h1>
@@ -881,31 +904,7 @@
                             <option value="sun">Sunday</option>
                         </select>
                         <div class="route-details" id="route-details">
-                            <h4 id="route-day-title" style="margin-bottom: 10px; color: #2c3e50; font-size: 0.9rem;">Monday Route</h4>
-
-                            <div class="route-item">
-                                <div class="route-info">
-                                    <div class="route-time">9:30 AM</div>
-                                    <div class="route-location">COP 3530 - Parking Garage 6</div>
-                                </div>
-                                <div class="route-status">📍 Start</div>
-                            </div>
-
-                            <div class="route-item">
-                                <div class="route-info">
-                                    <div class="route-time">11:00 AM</div>
-                                    <div class="route-location">Walk to Academic Health Center</div>
-                                </div>
-                                <div class="route-status">🚶‍♂️ 8 min</div>
-                            </div>
-
-                            <div class="route-item">
-                                <div class="route-info">
-                                    <div class="route-time">12:30 PM</div>
-                                    <div class="route-location">CAI 4002 - AHC 5 212A</div>
-                                </div>
-                                <div class="route-status">📍 Class</div>
-                            </div>
+                            <h4 id="route-day-title" style="margin-bottom: 10px; color: #2c3e50; font-size: 0.9rem;">Monday Route</h4>            
 
                             <div class="embedded-map" style="margin-bottom: 20px;">
                                 <div id="map" style="width: 100%; height: 200px; border-radius: 8px;"></div>
