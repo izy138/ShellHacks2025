@@ -175,9 +175,6 @@ function initMap() {
     `;
     document.head.appendChild(style);
     
-    // Add encoded polyline route
-    addEncodedPolyline();
-    
     // Fetch and display real route with alternating colors
     const testPlaceIds = [
         'ChIJbWv74i-_2YgRqsagPWgY2Qs',
@@ -189,37 +186,6 @@ function initMap() {
     fetchAndDisplayRoute(testPlaceIds);
 }
 
-function addEncodedPolyline() {
-    // Encoded polyline for FIU campus route
-    const encodedPolyline = "icg|CdlpiNbAEV?pBGZI|HYDbB@lEDT@n@|@EAYdA??HbACvA?J??@jB@AIZ?B^?z@C@L?Kr@A\\ZFVL@B|@C@JNH?lAZRFNJD@h@HDBH@LFHN@A?PTvDBF]DEd@Ce@BEDG\\@l@a@@g@\\K^Ur@@ZBTWTCXB\\LTFBVfA?rBl@B";
-    
-    try {
-        // Decode the polyline
-        const path = google.maps.geometry.encoding.decodePath(encodedPolyline);
-        
-        // Create polyline with different colors for segments
-        const polyline = new google.maps.Polyline({
-            path: path,
-            geodesic: true,
-            strokeColor: '#FF0000',
-            strokeOpacity: 1.0,
-            strokeWeight: 3
-        });
-        
-        polyline.setMap(map);
-        polylines.push(polyline);
-        
-        console.log('Added encoded polyline route to map');
-        
-        // Fit map to show the entire route
-        const bounds = new google.maps.LatLngBounds();
-        path.forEach(point => bounds.extend(point));
-        map.fitBounds(bounds);
-        
-    } catch (error) {
-        console.error('Error adding polyline:', error);
-    }
-}
 
 function addMultiplePolylines(polylineData) {
     // Clear existing polylines and markers
