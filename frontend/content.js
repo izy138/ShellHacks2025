@@ -670,14 +670,23 @@
         try {
             showAIResponse('🤔 Thinking...');
 
-            const response = await fetch('http://127.0.0.1:8000/api/ai/ask', {
+            // Get user ID for context (if available)
+            let userId = null;
+            try {
+                // Try to get user ID from localStorage (same as popup.js)
+                userId = localStorage.getItem('fiu_degree_tracker_user_id');
+            } catch (e) {
+                console.log('Could not get user ID:', e);
+            }
+
+            const response = await fetch('http://127.0.0.1:8000/api/ai/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ 
-                    question: question,
-                    context: 'degree_planning'
+                    message: question,
+                    user_id: userId
                 })
             });
 
@@ -688,7 +697,7 @@
             const data = await response.json();
             console.log('AI Response:', data);
             
-            showAIResponse(data.answer || data.response || 'Sorry, I couldn\'t process your question right now.');
+            showAIResponse(data.response || 'Sorry, I couldn\'t process your question right now.');
 
         } catch (error) {
             console.error('Error sending AI question:', error);
