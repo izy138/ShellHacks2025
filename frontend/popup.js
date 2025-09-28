@@ -131,33 +131,38 @@ function decodePolyline(encoded) {
 function initMap() {
     const container = document.getElementById('map');
     if (!container) return;
-    container.innerHTML = '';
-    container.style.position = 'relative';
-    container.style.background = '#eef2f5';
-    container.style.backgroundSize = 'cover';
-    container.style.backgroundPosition = 'center';
-    container.style.overflow = 'hidden';
-    // Grid fallback background (will be replaced once a static map is available)
-    container.style.backgroundImage = 'linear-gradient(#fff 0 0), repeating-linear-gradient(0deg,#dfe6ec,#dfe6ec 1px,transparent 1px,transparent 12px), repeating-linear-gradient(90deg,#dfe6ec,#dfe6ec 1px,transparent 1px,transparent 12px)';
-    container.style.backgroundBlendMode = 'multiply';
-
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('width', '100%');
-    svg.setAttribute('height', '100%');
-    svg.setAttribute('viewBox', '0 0 100 100');
-    svg.id = 'route-svg';
-    svg.style.display = 'block';
-    svg.style.position = 'relative';
-    svg.style.zIndex = '2';
-    container.appendChild(svg);
-
-    // Load current day route
+    // If already initialized, just clear previous drawing
+    if (document.getElementById('route-svg')) {
+        clearRenderedRoute();
+    } else {
+        container.innerHTML = '';
+        container.style.position = 'relative';
+        container.style.background = '#eef2f5';
+        container.style.backgroundSize = 'cover';
+        container.style.backgroundPosition = 'center';
+        container.style.overflow = 'hidden';
+        container.style.backgroundImage = 'linear-gradient(#fff 0 0), repeating-linear-gradient(0deg,#dfe6ec,#dfe6ec 1px,transparent 1px,transparent 12px), repeating-linear-gradient(90deg,#dfe6ec,#dfe6ec 1px,transparent 1px,transparent 12px)';
+        container.style.backgroundBlendMode = 'multiply';
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', '100%');
+        svg.setAttribute('viewBox', '0 0 100 100');
+        svg.id = 'route-svg';
+        svg.style.display = 'block';
+        svg.style.position = 'relative';
+        svg.style.zIndex = '2';
+        container.appendChild(svg);
+    }
     const routeDaySelect = document.getElementById('route-day-select');
     const selectedDay = routeDaySelect ? (routeDaySelect.value || 'mon') : 'mon';
     getUserData().then(userData => {
         const blocks = (userData.schedule && userData.schedule[selectedDay]) ? userData.schedule[selectedDay] : [];
         const placeIds = blocks.map(b => b.location && b.location.id).filter(Boolean);
-        if (placeIds.length) fetchAndDisplayRoute(placeIds); else clearRenderedRoute();
+        if (placeIds.length) {
+            fetchAndDisplayRoute(placeIds);
+        } else {
+            clearRenderedRoute();
+        }
     });
 }
 
@@ -183,85 +188,160 @@ function estimateZoom(maxSpanDegrees) {
 function addMultiplePolylines(polylineData) {
     clearRenderedRoute();
     const container = document.getElementById('map');
-    const svg = document.getElementById('route-svg');
-    if (!container || !svg) return;
+    const svgExisting = document.getElementById('route-svg');
+    if (!container || !svgExisting) return;
     if (!polylineData || !polylineData.length) return;
 
-    // Decode all legs / segments
-    const colors = ['#003366', '#B8860B']; // FIU blue & gold
-    const segments = polylineData.map((seg, i) => {
+    // Decode segments
+    const colors = ['#B8860B', '#003366']; // alternate Gold, Blue
+    let segments = polylineData.map((seg, i) => {
         const encoded = seg.encodedPolyline || seg.polyline || '';
         const pts = decodePolyline(encoded);
         return { pts, encoded, meta: seg, color: colors[i % colors.length] };
     }).filter(s => s.pts.length);
+    // De-duplicate identical polylines
+    const seen = new Set();
+    segments = segments.filter(s => { if (seen.has(s.encoded)) return false; seen.add(s.encoded); return true; });
     if (!segments.length) return;
 
     // Compute bounds
-    let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+    let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
     segments.forEach(seg => seg.pts.forEach(p => { if (p.lat < minLat) minLat = p.lat; if (p.lat > maxLat) maxLat = p.lat; if (p.lng < minLng) minLng = p.lng; if (p.lng > maxLng) maxLng = p.lng; }));
-    const latSpan = maxLat - minLat || 1e-6; const lngSpan = maxLng - minLng || 1e-6; const maxSpan = Math.max(latSpan, lngSpan);
+    const latSpan = Math.max(0.00001, maxLat - minLat);
+    const lngSpan = Math.max(0.00001, maxLng - minLng);
+    const centerLat = (minLat + maxLat) / 2;
+    const centerLng = (minLng + maxLng) / 2;
 
-    // Optional Static Maps background if key defined in window.CONFIG
+    // Determine map size (match container, clamp to Static Maps limits)
+    const contW = container.clientWidth || 400;
+    const contH = container.clientHeight || 200;
+    const sizeW = Math.min(640, Math.max(100, Math.round(contW)));
+    const sizeH = Math.min(640, Math.max(100, Math.round(contH)));
+    const SCALE = 2; // static map scale
+
+    // Web Mercator helpers
+    const WORLD_TILE_SIZE = 256;
+    function mercatorY(lat) {
+        const rad = lat * Math.PI / 180;
+        return Math.log(Math.tan(Math.PI / 4 + rad / 2));
+    }
+    function latToPixelY(lat, zoom) {
+        const siny = mercatorY(lat);
+        const worldPx = WORLD_TILE_SIZE * Math.pow(2, zoom);
+        return (worldPx / 2) - (worldPx * siny / (2 * Math.PI));
+    }
+    function lngToPixelX(lng, zoom) {
+        const worldPx = WORLD_TILE_SIZE * Math.pow(2, zoom);
+        return (lng + 180) / 360 * worldPx;
+    }
+
+    // Compute zoom to fit bounds
+    function fitZoom(minLat, maxLat, minLng, maxLng, widthPx, heightPx) {
+        // leave padding (10%)
+        const paddingFactor = 0.9;
+        for (let z = 20; z >= 2; z--) {
+            const worldPx = WORLD_TILE_SIZE * Math.pow(2, z);
+            const xMin = lngToPixelX(minLng, z);
+            const xMax = lngToPixelX(maxLng, z);
+            const yMin = latToPixelY(maxLat, z); // note: maxLat -> min y
+            const yMax = latToPixelY(minLat, z); // minLat -> max y
+            const spanX = (xMax - xMin);
+            const spanY = (yMax - yMin);
+            if (spanX <= widthPx * paddingFactor && spanY <= heightPx * paddingFactor) {
+                return z;
+            }
+        }
+        return 2;
+    }
+
+    const mapPixelWidth = sizeW * SCALE;
+    const mapPixelHeight = sizeH * SCALE;
+    const zoom = fitZoom(minLat, maxLat, minLng, maxLng, mapPixelWidth, mapPixelHeight);
+
+    // Setup / reuse SVG sized to map pixels
+    const svg = svgExisting;
+    svg.setAttribute('viewBox', `0 0 ${mapPixelWidth} ${mapPixelHeight}`);
+    svg.innerHTML = '';
+
+    // Background Static Map (with NO path overlays to avoid duplication) - now sized exactly to container
     const STATIC_KEY = (window.CONFIG && (CONFIG.GOOGLE_MAPS_API_KEY || CONFIG.STATIC_MAPS_API_KEY) && (CONFIG.GOOGLE_MAPS_API_KEY !== 'REPLACE_WITH_REAL_KEY')) ? (CONFIG.GOOGLE_MAPS_API_KEY || CONFIG.STATIC_MAPS_API_KEY) : null;
     if (STATIC_KEY) {
-        const centerLat = (minLat + maxLat) / 2; const centerLng = (minLng + maxLng) / 2;
-        let zoom = estimateZoom(maxSpan * 1.35); // padding factor
-        const w = container.clientWidth || 400; const h = container.clientHeight || 220;
-        const sizeW = Math.min(640, Math.max(100, w));
-        const sizeH = Math.min(640, Math.max(100, h));
-        const pathParams = segments.map(seg => `path=${encodeURIComponent(`weight:4|color:0x${seg.color.replace('#','') }FF|enc:${seg.encoded}`)}`);
-        const start = segments[0].pts[0];
-        const end = segments[segments.length - 1].pts[segments[segments.length - 1].pts.length - 1];
-        const markers = [
-            'markers=' + encodeURIComponent(`scale:1|color:green|${start.lat},${start.lng}`),
-            'markers=' + encodeURIComponent(`scale:1|color:red|${end.lat},${end.lng}`)
-        ];
-        const base = `https://maps.googleapis.com/maps/api/staticmap?center=${centerLat},${centerLng}&zoom=${zoom}&size=${sizeW}x${sizeH}&maptype=roadmap&scale=2`;
-        const url = `${base}&${[...pathParams, ...markers].join('&')}&key=${STATIC_KEY}`;
-        container.style.backgroundImage = `url('${url}')`;
-        container.style.backgroundSize = 'cover';
+        const base = `https://maps.googleapis.com/maps/api/staticmap?center=${centerLat},${centerLng}&zoom=${zoom}&size=${sizeW}x${sizeH}&scale=${SCALE}&maptype=roadmap`;
+        container.style.backgroundImage = `url('${base}&key=${STATIC_KEY}')`;
+        container.style.backgroundSize = '100% 100%';
         container.style.backgroundPosition = 'center';
     }
 
-    // Project to SVG viewBox (0..100)
-    const PAD = 4;
-    function project(p) {
-        const x = PAD + ((p.lng - minLng) / lngSpan) * (100 - 2 * PAD);
-        const y = PAD + ((1 - (p.lat - minLat) / latSpan)) * (100 - 2 * PAD);
-        return { x, y };
+    // Center pixel positions for projection
+    const centerPxX = lngToPixelX(centerLng, zoom);
+    const centerPxY = latToPixelY(centerLat, zoom);
+
+    function projectPoint(p) {
+        const pxX = lngToPixelX(p.lng, zoom);
+        const pxY = latToPixelY(p.lat, zoom);
+        // translate so center sits in middle of map pixel dimensions
+        const screenX = mapPixelWidth / 2 + (pxX - centerPxX);
+        const screenY = mapPixelHeight / 2 + (pxY - centerPxY);
+        return { x: screenX, y: screenY };
     }
 
-    // Draw polylines
+    // Draw polylines aligned with map
     segments.forEach(seg => {
-        const pts = seg.pts.map(project);
+        const projPts = seg.pts.map(projectPoint);
         const pl = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
-        pl.setAttribute('points', pts.map(pt => `${pt.x},${pt.y}`).join(' '));
+        pl.setAttribute('points', projPts.map(pt => `${pt.x.toFixed(2)},${pt.y.toFixed(2)}`).join(' '));
         pl.setAttribute('fill', 'none');
         pl.setAttribute('stroke', seg.color);
-        pl.setAttribute('stroke-width', '2.5');
+        pl.setAttribute('stroke-width', '7'); // increased thickness
         pl.setAttribute('stroke-linecap', 'round');
         pl.setAttribute('stroke-linejoin', 'round');
+        pl.setAttribute('stroke-opacity', '0.95');
         svg.appendChild(pl);
         polylines.push(pl);
     });
 
-    // Build marker metadata (reuse existing addRouteMarker interface)
-    segments.forEach((seg, idx) => {
-        if (idx === 0) addRouteMarker(seg.pts[0], 'start');
-        if (idx === segments.length - 1) addRouteMarker(seg.pts[seg.pts.length - 1], 'end');
-        if (idx > 0) addRouteMarker(seg.pts[0], 'waypoint');
-    });
+    // Markers (ensure: first = green, last = red, all intermediates = grey)
+    // Clear any residual markers just in case
+    routeMarkers = [];
+    const eqPoint = (a, b) => Math.abs(a.lat - b.lat) < 1e-6 && Math.abs(a.lng - b.lng) < 1e-6;
 
-    // Render markers as SVG circles
+    if (segments.length) {
+        const firstPt = segments[0].pts[0];
+        const lastSeg = segments[segments.length - 1];
+        const lastPt = lastSeg.pts[lastSeg.pts.length - 1];
+        // Start
+        routeMarkers.push({ position: firstPt, type: 'start' });
+        // Intermediate junctions (start of each segment after the first)
+        for (let i = 1; i < segments.length; i++) {
+            const junction = segments[i].pts[0];
+            // Skip if same as global start or global end (avoid duplicates)
+            if (!eqPoint(junction, firstPt) && !eqPoint(junction, lastPt)) {
+                routeMarkers.push({ position: junction, type: 'waypoint' });
+            }
+        }
+        // End (only if different from start)
+        if (!eqPoint(lastPt, firstPt)) {
+            routeMarkers.push({ position: lastPt, type: 'end' });
+        } else {
+            // Edge case: start and end identical (very small / zero-length route) -> keep start only
+        }
+    }
+
     routeMarkers.forEach(m => {
-        const { x, y } = project(m.position);
-        let color = '#95a5a6', r = 3.2;
-        if (m.type === 'start') { color = '#27ae60'; r = 4.2; }
-        else if (m.type === 'end') { color = '#e74c3c'; r = 4.2; }
+        const { x, y } = projectPoint(m.position);
+        let color = '#95a5a6', r = 12;
+        if (m.type === 'start') { color = '#27ae60'; r = 15; }
+        else if (m.type === 'end') { color = '#e74c3c'; r = 15; }
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', r);
-        c.setAttribute('fill', color); c.setAttribute('stroke', '#ffffff'); c.setAttribute('stroke-width', '1');
-        svg.appendChild(c);
+        c.setAttribute('fill', color); c.setAttribute('stroke', '#ffffff'); c.setAttribute('stroke-width', '2');
+        g.appendChild(c);
+        const c2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        c2.setAttribute('cx', x); c2.setAttribute('cy', y); c2.setAttribute('r', r + 2.5);
+        c2.setAttribute('fill', 'none'); c2.setAttribute('stroke', color); c2.setAttribute('stroke-opacity', '0.25'); c2.setAttribute('stroke-width', '2');
+        g.appendChild(c2);
+        svg.appendChild(g);
     });
 }
 
@@ -905,13 +985,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (placeIds.length > 0) {
                 fetchAndDisplayRoute(placeIds);
             } else {
-                // Optionally clear map or show message if no blocks
-                if (window.map) {
-                    polylines.forEach(polyline => polyline.setMap(null));
-                    polylines = [];
-                    routeMarkers.forEach(marker => marker.setMap(null));
-                    routeMarkers = [];
-                }
+                clearRenderedRoute();
             }
         });
     }
@@ -1027,12 +1101,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (placeIds.length > 0) {
                 fetchAndDisplayRoute(placeIds);
             } else {
-                if (window.map) {
-                    polylines.forEach(polyline => polyline.setMap(null));
-                    polylines = [];
-                    routeMarkers.forEach(marker => marker.setMap(null));
-                    routeMarkers = [];
-                }
+                clearRenderedRoute();
             }
         }
 
