@@ -112,7 +112,7 @@ def get_route_query(place_id_list: List[str] = Query(...)):
     try:
         # Convert list of place_id strings to list of dicts
         place_ids = [{"place_id": pid} for pid in place_id_list]
-        return g_get_route(place_id_list)
+        return g_get_route(place_ids)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing route: {str(e)}")
 

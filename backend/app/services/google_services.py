@@ -10,7 +10,7 @@ api_key = os.getenv("GOOGLE_API_KEY")
 def make_waypoint(placeId):
     return {"via": False,
             "sideOfRoad": False,
-            "placeId": placeId
+            "placeId": placeId["place_id"]
             }
 
 def get_route(location_list):
