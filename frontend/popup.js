@@ -1054,6 +1054,9 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('block-start').value = '';
             document.getElementById('block-end').value = '';
             document.getElementById('block-location').value = '';
+            // Set modal title for add
+            const modalTitle = document.getElementById('add-block-modal-title');
+            if (modalTitle) modalTitle.textContent = 'Add Schedule Block';
             // Remove modal footer if present (reset buttons)
             let modalFooter = addBlockForm.parentElement.querySelector('.modal-footer');
             if (modalFooter) modalFooter.remove();
@@ -1166,6 +1169,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('block-location').value = block.location.code;
                 const submitBtn = addBlockForm.querySelector('button[type="submit"]');
                 if (submitBtn) submitBtn.textContent = 'Update';
+                // Set modal title for update
+                const modalTitle = document.getElementById('add-block-modal-title');
+                if (modalTitle) modalTitle.textContent = 'Update Schedule Block';
             });
             addBlockModal.style.display = 'block';
             // Remove modal footer if present (reset buttons)

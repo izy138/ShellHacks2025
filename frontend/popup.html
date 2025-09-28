@@ -27,6 +27,20 @@
             border: none;
         }
 
+        /* Fix modal dropdown menus so they appear directly below their input */
+        #add-block-modal select {
+            position: relative;
+            z-index: 10002;
+            background: #fff;
+        }
+        #add-block-modal select:focus {
+            outline: 2px solid #013677;
+        }
+        /* Ensure dropdown menus are not cut off by modal overflow */
+        #add-block-modal {
+            overflow: visible !important;
+        }
+
         .container {
             width: 100%;
             height: 100%;
@@ -666,7 +680,7 @@
 
 <body>
     <div id="add-block-modal" style="display:none;position:fixed;left:50%;top:50%;transform:translate(-50%, -50%);z-index:10001;background:#fff;border-radius:10px;box-shadow:0 2px 16px rgba(0,0,0,0.18);padding:24px 20px;min-width:260px;max-width:320px;">
-        <h3 style="margin-bottom:12px;color:#013677;font-size:1.1rem;text-align:center;">Add Schedule Block</h3>
+        <h3 id="add-block-modal-title" style="margin-bottom:12px;color:#013677;font-size:1.1rem;text-align:center;">Add Schedule Block</h3>
         <form id="add-block-form">
             <label for="block-day">Day of Week</label>
             <select id="block-day" style="width:100%;margin-bottom:10px;">
