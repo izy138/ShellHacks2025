@@ -1,7 +1,7 @@
 # FIU Panther Planner
 
 To add the extension:
-Go to chrome://extensions, enable Develope Mode on the top right, and click Load Unpacked and select frontend. 
+Go to chrome://extensions, enable Developer Mode on the top right, and click Load Unpacked and select frontend. 
 Go to my.fiu.edu and start the extension. 
 Select a major at the top to enable features.
 
