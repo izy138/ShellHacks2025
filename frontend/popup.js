@@ -860,7 +860,7 @@ document.head.appendChild(style);
 // Get completed courses from storage
 async function getCompletedCourses() {
     try {
-        const userData = getUserData();
+        const userData = await getUserData();
         return userData.completedCourses || [];
     } catch (error) {
         console.error('Error getting completed courses:', error);
@@ -1095,12 +1095,12 @@ function updateProgress() {
 }
 
 // Course completion functionality
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
     console.log('DOM loaded, starting course loading...');
     
     // Initialize user data
     const userId = getUserId();
-    const userData = getUserData();
+    const userData = await getUserData();
     console.log('User ID:', userId);
     console.log('User data:', userData);
     
@@ -1112,11 +1112,11 @@ document.addEventListener('DOMContentLoaded', function () {
     
     // Add event listener for major dropdown changes
     if (majorDropdown) {
-        majorDropdown.addEventListener('change', function() {
+        majorDropdown.addEventListener('change', async function() {
             const selectedMajor = this.value;
-            const userData = getUserData();
+            const userData = await getUserData();
             userData.major = selectedMajor;
-            saveUserData(userData);
+            await saveUserData(userData);
             console.log('Saved major selection:', selectedMajor);
             
             // Reload courses for the new major
