@@ -943,7 +943,43 @@ function toggleAIDropdown() {
 }
 
 // Add event listeners for dropdown headers
+// Dynamically update credits earned in progress tab
+async function updateCreditsEarned() {
+    const userData = await getUserData();
+    const takenCourses = userData.taken_courses || [];
+    let totalCredits = 0;
+    for (const code of takenCourses) {
+        const course = await fetchCourseDetails(code);
+        if (course && course.credits) {
+            totalCredits += parseInt(course.credits);
+        }
+    }
+    const creditsElem = document.querySelector('.stat-number[data-stat="credits-earned"]');
+    if (creditsElem) {
+        creditsElem.textContent = totalCredits;
+    }
+
+    // Update progress percentage
+    let requiredCourses = [];
+    // Try to get required courses from user's major
+    if (userData.major) {
+        const majorData = await fetchMajorCourses(userData.major);
+        if (majorData && Array.isArray(majorData.required_courses)) {
+            requiredCourses = majorData.required_courses;
+        }
+    }
+    let percent = 0;
+    if (requiredCourses.length > 0) {
+        percent = Math.round((takenCourses.length / requiredCourses.length) * 100);
+    }
+    const progressElem = document.querySelector('.stat-number[data-stat="progress-percentage"]');
+    if (progressElem) {
+        progressElem.textContent = `${percent}%`;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    updateCreditsEarned();
     // Vertically center schedule modals regardless of scroll
     const modalStyle = document.createElement('style');
     modalStyle.innerHTML = `
@@ -1401,6 +1437,7 @@ async function saveCompletedCourse(courseCode) {
             userData.taken_courses.push(courseCode);
             await saveUserData(userData);
             console.log('Added to taken_courses:', courseCode);
+            updateCreditsEarned();
         }
     } catch (error) {
         console.error('Error saving completed course:', error);
@@ -1415,6 +1452,7 @@ async function removeCompletedCourse(courseCode) {
             userData.taken_courses.splice(index, 1);
             await saveUserData(userData);
             console.log('Removed from taken_courses:', courseCode);
+            updateCreditsEarned();
         }
     } catch (error) {
         console.error('Error removing completed course:', error);
