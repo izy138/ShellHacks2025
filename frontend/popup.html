@@ -197,6 +197,61 @@
             color: #1d4ed8;
         }
 
+        /* AI Response Area Styles */
+        .ai-response-area {
+            margin-top: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            background: #f9fafb;
+            overflow: hidden;
+        }
+
+        .ai-response-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #013677;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .ai-response-header h4 {
+            margin: 0;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .clear-response-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .clear-response-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        .ai-response-content {
+            padding: 12px;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #374151;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
         .prompt-templates {
             display: flex;
             gap: 10px;
@@ -624,6 +679,7 @@
                 </div>
                 <div class="ai-content" id="ai-content">
                     <input type="text" class="ai-input" placeholder="Ask about courses, prerequisites, or planning...">
+                    <button class="ai-button">Ask AI</button>
 
                     <!-- Prompt templates container -->
                     <div class="prompt-templates">
@@ -636,7 +692,17 @@
                         </button>
                     </div>
 
-                    <button class="ai-button">Ask AI</button>
+                    <!-- AI Response Display Area -->
+                    <div class="ai-response-area" id="ai-response-area" style="display: none;">
+                        <div class="ai-response-header">
+                            <h4>🤖 Roary's Response</h4>
+                            <button class="clear-response-btn" id="clear-response-btn">✕</button>
+                        </div>
+                        <div class="ai-response-content" id="ai-response-content">
+                            <!-- AI responses will be displayed here -->
+                        </div>
+                    </div>
+
                 </div>
             </div>
 

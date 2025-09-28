@@ -14,6 +14,7 @@ from app.services.google_services import (
     get_route as g_get_route,
     get_route_times as g_get_route_times
 )
+from app.services.claude_services import claude_agent
 
 router = APIRouter(prefix="/api")
 
@@ -131,3 +132,109 @@ def get_route_endpoint(place_ids: str):
 def get_route_times(class_list_string: str):
     class_list = class_list_string.split(',')
     return g_get_route_times(class_list)
+
+
+#----------------- AI Agent Endpoints -----------------
+@router.post("/ai/chat")
+async def ai_chat(request: dict):
+    """
+    Chat with the AI agent (Roary)
+    
+    Args:
+        request: JSON body containing message and optional user_id
+        
+    Returns:
+        AI response
+    """
+    try:
+        message = request.get('message', '')
+        user_id = request.get('user_id')
+        
+        if not message:
+            raise HTTPException(status_code=400, detail="Message is required")
+        
+        context = None
+        if user_id:
+            # Get user data for context
+            user_data = await get_user(user_id)
+            if user_data:
+                context = {
+                    'major': user_data.get('major'),
+                    'completed_courses': user_data.get('taken_courses', []),
+                    'current_courses': user_data.get('current_courses', [])
+                }
+        
+        response = await claude_agent.chat(message, context)
+        return {"response": response, "status": "success"}
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing AI request: {str(e)}")
+
+@router.post("/ai/recommendations")
+async def get_course_recommendations(request: dict):
+    """
+    Get course recommendations for a user
+    
+    Args:
+        request: JSON body containing user_id
+        
+    Returns:
+        Course recommendations
+    """
+    try:
+        user_id = request.get('user_id')
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id is required")
+        
+        user_data = await get_user(user_id)
+        if not user_data:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        recommendations = await claude_agent.get_course_recommendations(user_data)
+        return {"recommendations": recommendations, "status": "success"}
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error getting recommendations: {str(e)}")
+
+@router.post("/ai/course-requirements")
+async def check_course_requirements(request: dict):
+    """
+    Check requirements for a specific course
+    
+    Args:
+        request: JSON body containing course_code and optional user_id
+        
+    Returns:
+        Course requirements information
+    """
+    try:
+        course_code = request.get('course_code')
+        user_id = request.get('user_id')
+        
+        if not course_code:
+            raise HTTPException(status_code=400, detail="course_code is required")
+        
+        context = None
+        if user_id:
+            user_data = await get_user(user_id)
+            if user_data:
+                context = {
+                    'major': user_data.get('major'),
+                    'completed_courses': user_data.get('taken_courses', []),
+                    'current_courses': user_data.get('current_courses', [])
+                }
+        
+        requirements = await claude_agent.check_course_requirements(course_code, context)
+        return {"requirements": requirements, "status": "success"}
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error checking course requirements: {str(e)}")
