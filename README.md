@@ -15,7 +15,7 @@ Click on chrome extension or go to my.fiu.edu
 Google Maps API's used:
 Maps Static API, Places API, Geocoding API, Routes API.
 
-### Dependenciesx
+### Dependencies
 This project utilizes the following Python libraries: fastapi, motor, uvicorn, pydantic, python-dotenv, python-multipart, anthropic, requests, google-adk
 
 #### FIU Panther Planner
