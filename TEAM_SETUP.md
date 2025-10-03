@@ -32,7 +32,7 @@ cat > .env << 'EOF'
 CLAUDE_API_KEY=your_claude_api_key_here
 
 # Google API Key for Maps and other Google services
-GOOGLE_API_KEY=AIzaSyDaK8v3R7sOR-yXymcDVsgQVX2-U8pgJR0
+GOOGLE_API_KEY=
 
 # MongoDB connection
 MONGO_URL=mongodb://localhost:27017

@@ -129,8 +129,13 @@ function decodePolyline(encoded) {
 }
 
 function initMap() {
+    console.log('initMap called');
     const container = document.getElementById('map');
-    if (!container) return;
+    console.log('Map container:', container);
+    if (!container) {
+        console.log('No map container found');
+        return;
+    }
     // If already initialized, just clear previous drawing
     if (document.getElementById('route-svg')) {
         clearRenderedRoute();
@@ -157,7 +162,7 @@ function initMap() {
     const selectedDay = routeDaySelect ? (routeDaySelect.value || 'mon') : 'mon';
     getUserData().then(userData => {
         const blocks = (userData.schedule && userData.schedule[selectedDay]) ? userData.schedule[selectedDay] : [];
-        const placeIds = blocks.map(b => b.location && b.location.id).filter(Boolean);
+        const placeIds = blocks.map(b => b.location && b.location.google_maps_place_id).filter(Boolean);
         if (placeIds.length) {
             fetchAndDisplayRoute(placeIds);
         } else {
@@ -264,7 +269,7 @@ function addMultiplePolylines(polylineData) {
     svg.innerHTML = '';
 
     // Background Static Map (with NO path overlays to avoid duplication) - now sized exactly to container
-    const STATIC_KEY = (window.CONFIG && (CONFIG.GOOGLE_MAPS_API_KEY || CONFIG.STATIC_MAPS_API_KEY) && (CONFIG.GOOGLE_MAPS_API_KEY !== 'REPLACE_WITH_REAL_KEY')) ? (CONFIG.GOOGLE_MAPS_API_KEY || CONFIG.STATIC_MAPS_API_KEY) : null;
+    const STATIC_KEY = (window.CONFIG && CONFIG.GOOGLE_MAPS_KEY && (CONFIG.GOOGLE_MAPS_KEY !== 'REPLACE_WITH_REAL_KEY')) ? CONFIG.GOOGLE_MAPS_KEY : null;
     if (STATIC_KEY) {
         const base = `https://maps.googleapis.com/maps/api/staticmap?center=${centerLat},${centerLng}&zoom=${zoom}&size=${sizeW}x${sizeH}&scale=${SCALE}&maptype=roadmap`;
         container.style.backgroundImage = `url('${base}&key=${STATIC_KEY}')`;
@@ -356,11 +361,21 @@ async function fetchAndDisplayRoute(placeIds) {
         
         const response = await fetch(url);
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`HTTP error! status: ${response.status}, response: ${errorText}`);
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const routeData = await response.json();
         console.log('Route data received:', routeData);
+        
+        // Check if routeData is null or doesn't have routes
+        if (!routeData || !routeData.routes || routeData.routes.length === 0) {
+            console.error('No routes found in response or response is null');
+            // Fallback to sample data
+            addRouteSegments();
+            return;
+        }
         
         if (routeData.routes && routeData.routes.length > 0) {
             const route = routeData.routes[0];
@@ -502,10 +517,14 @@ async function getUserData() {
     const userId = getUserId();
     try {
         const res = await fetch(`${API_BASE_URL}/users/${userId}`);
-        if (!res.ok) throw new Error('User not found');
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.log(`User fetch failed: ${res.status} - ${errorText}`);
+            throw new Error(`User not found: ${res.status}`);
+        }
         return await res.json();
     } catch (e) {
-        console.log(e)
+        console.log('Creating new user:', e.message);
         // If not found, create user in backend with valid Schedule for blocked_time
         const defaultSchedule = {
             "mon": [],
@@ -516,23 +535,48 @@ async function getUserData() {
             "sat": [],
             "sun": []
         };
-        await fetch(`${API_BASE_URL}/users`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId, major: '', taken_courses: [], current_courses: [], schedule: defaultSchedule })
-        });
+        
+        try {
+            const createRes = await fetch(`${API_BASE_URL}/users`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, major: '', taken_courses: [], current_courses: [], schedule: defaultSchedule })
+            });
+            
+            if (!createRes.ok) {
+                const errorText = await createRes.text();
+                console.error(`User creation failed: ${createRes.status} - ${errorText}`);
+            } else {
+                console.log('User created successfully');
+            }
+        } catch (createError) {
+            console.error('Error creating user:', createError);
+        }
+        
         return { user_id: userId, major: '', taken_courses: [], current_courses: [], schedule: defaultSchedule };
     }
 }
 
 async function saveUserData(data) {
     const userId = getUserId();
-    await fetch(`${API_BASE_URL}/users/${userId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-    console.log('Synced user data to backend for:', userId);
+    console.log('Saving user data for:', userId);
+    console.log('Data being sent:', JSON.stringify(data, null, 2));
+    try {
+        const res = await fetch(`${API_BASE_URL}/users/${userId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error(`User update failed: ${res.status} - ${errorText}`);
+        } else {
+            console.log('Synced user data to backend for:', userId);
+        }
+    } catch (error) {
+        console.error('Error saving user data:', error);
+    }
 }
 
 // Tab switching functionality
@@ -599,12 +643,12 @@ async function fetchMajorCourses(majorId) {
 }
 
 async function fetchCourseDetails(courseCode) {
-    console.log('fetchCourseDetails called for:', courseCode);
+    // console.log('fetchCourseDetails called for:', courseCode);
     // Use and update course cache
     const cacheKey = 'coursesCache';
     let courseCache = getCachedData(cacheKey) || {};
     if (courseCache[courseCode]) {
-        console.log('Returning cached course for', courseCode);
+        // console.log('Returning cached course for', courseCode);
         return courseCache[courseCode];
     }
     const url = `${API_BASE_URL}/courses/${encodeURIComponent(courseCode)}`;
@@ -654,7 +698,7 @@ async function fetchCourseDetails(courseCode) {
 async function loadCoursesFromAPI() {
     console.log('loadCoursesFromAPI called');
     const courseGrid = document.querySelector('.course-grid');
-    console.log('Course grid found:', courseGrid);
+    // console.log('Course grid found:', courseGrid);
     if (!courseGrid) {
         console.error('Course grid not found!');
         return;
@@ -688,24 +732,24 @@ async function loadCoursesFromAPI() {
     const completedCourses = userData.taken_courses || [];
 
     // Create course items from API data
-    console.log('Checking majorData.required_courses:', majorData.required_courses);
-    console.log('Is array?', Array.isArray(majorData.required_courses));
+    // console.log('Checking majorData.required_courses:', majorData.required_courses);
+    // console.log('Is array?', Array.isArray(majorData.required_courses));
     
     if (majorData.required_courses && Array.isArray(majorData.required_courses)) {
         console.log('Processing', majorData.required_courses.length, 'courses');
-        console.log('Course codes:', majorData.required_courses);
+        // console.log('Course codes:', majorData.required_courses);
         
         for (const courseCode of majorData.required_courses) {
-            console.log('Fetching details for course:', courseCode);
+            // console.log('Fetching details for course:', courseCode);
             const courseDetails = await fetchCourseDetails(courseCode);
-            console.log('Course details for', courseCode, ':', courseDetails);
+            // console.log('Course details for', courseCode, ':', courseDetails);
             const isCompleted = completedCourses.includes(courseCode);
             
-            console.log('Creating course item for:', courseCode);
+            // console.log('Creating course item for:', courseCode);
             const courseItem = createCourseItem(courseCode, courseDetails, isCompleted);
-            console.log('Course item created:', courseItem);
+            // console.log('Course item created:', courseItem);
             courseGrid.appendChild(courseItem);
-            console.log('Course item appended to grid');
+            // console.log('Course item appended to grid');
         }
         
         console.log('All courses processed. Course grid children count:', courseGrid.children.length);
@@ -787,7 +831,7 @@ function showFallbackCourses(courseGrid) {
 
 // Create a course item element
 function createCourseItem(courseCode, courseDetails, isCompleted = false) {
-    console.log('createCourseItem called with:', { courseCode, courseDetails, isCompleted });
+    // console.log('createCourseItem called with:', { courseCode, courseDetails, isCompleted });
     
     const courseItem = document.createElement('div');
     courseItem.className = `course-checkbox-item ${isCompleted ? 'completed' : ''}`;
@@ -795,14 +839,14 @@ function createCourseItem(courseCode, courseDetails, isCompleted = false) {
     const courseName = courseDetails ? courseDetails.name : courseCode;
     const courseCredits = courseDetails ? courseDetails.credits : 3;
     
-    console.log('Course item details:', { courseName, courseCredits });
+    // console.log('Course item details:', { courseName, courseCredits });
     
     courseItem.innerHTML = `
         <input type="checkbox" ${isCompleted ? 'checked' : ''} data-course-code="${courseCode}">
         <span>${courseCode}<br><small>${courseName}<br>(${courseCredits} credits)</small></span>
     `;
     
-    console.log('Course item HTML created:', courseItem.innerHTML);
+    // console.log('Course item HTML created:', courseItem.innerHTML);
     return courseItem;
 }
 
@@ -1011,8 +1055,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedDay = this.value; // e.g. 'mon', 'tue', ...
             const userData = await getUserData();
             const blocks = (userData.schedule && userData.schedule[selectedDay]) ? userData.schedule[selectedDay] : [];
-            // Extract place ids from block.location.id
-            const placeIds = blocks.map(block => block.location && block.location.id).filter(Boolean);
+            // Extract place ids from block.location.google_maps_place_id
+            const placeIds = blocks.map(block => block.location && block.location.google_maps_place_id).filter(Boolean);
             // Update route title
             const dayNames = { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' };
             const routeDayTitle = document.getElementById('route-day-title');
@@ -1143,7 +1187,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 selectedDay = routeDaySelect.value || 'mon';
             }
             const blocksForRoute = (userData.schedule && userData.schedule[selectedDay]) ? userData.schedule[selectedDay] : [];
-            const placeIds = blocksForRoute.filter(b => b && b.location && b.location.id).map(block => block.location.id);
+            const placeIds = blocksForRoute.filter(b => b && b.location && b.location.google_maps_place_id).map(block => block.location.google_maps_place_id);
             if (placeIds.length > 0) {
                 fetchAndDisplayRoute(placeIds);
             } else {
@@ -1218,6 +1262,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 editBlockState = null;
                 modalFooter.innerHTML = '';
                 await populateScheduleCalendar();
+                
+                // Initialize map if it hasn't been initialized yet
+                const mapElement = document.getElementById('map');
+                if (mapElement && !map) {
+                    console.log('Initializing map after deleting schedule block...');
+                    initMap();
+                }
             };
             // Update button is handled by form submit
         }
@@ -1237,6 +1288,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     showNotification('Location not found!');
                     return;
                 }
+                
+                // Ensure location object has the correct field names for backend
+                const normalizedLocation = {
+                    code: locationObj.code,
+                    full_name: locationObj.full_name,
+                    address: locationObj.address || null,
+                    google_maps_place_id: locationObj.id || null
+                };
                 const dayMap = {
                     Monday: 'mon', Tuesday: 'tue', Wednesday: 'wed', Thursday: 'thu', Friday: 'fri', Saturday: 'sat', Sunday: 'sun'
                 };
@@ -1275,7 +1334,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     showNotification('Time conflict: The entered time overlaps with an existing block.', true);
                     return;
                 }
-                const newBlock = { start_time: start, end_time: end, location: locationObj };
+                const newBlock = { start_time: start, end_time: end, location: normalizedLocation };
                 if (editBlockState) {
                     // Editing existing block: update in place
                     if (modelDay === editBlockState.dayKey) {
@@ -1297,6 +1356,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (deleteBtn) deleteBtn.remove();
                     }
                     await populateScheduleCalendar();
+                    
+                    // Initialize map if it hasn't been initialized yet
+                    const mapElement = document.getElementById('map');
+                    if (mapElement && !map) {
+                        console.log('Initializing map after updating schedule block...');
+                        initMap();
+                    }
                     return;
                 }
                 // Normal add
@@ -1306,6 +1372,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 addBlockModal.style.display = 'none';
                 showNotification(`Block added to ${day}: ${start}-${end}`);
                 await populateScheduleCalendar();
+                
+                // Initialize map if it hasn't been initialized yet
+                const mapElement = document.getElementById('map');
+                if (mapElement && !map) {
+                    console.log('Initializing map after adding schedule block...');
+                    initMap();
+                }
             }
         }
         // Initial population on DOMContentLoaded
@@ -1410,7 +1483,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return response.json();
         })
         .then(data => {
-            console.log('Test API data:', data);
+            // console.log('Test API data:', data);
         })
         .catch(error => {
             console.error('Test API error:', error);
@@ -1424,10 +1497,17 @@ document.addEventListener('DOMContentLoaded', function () {
     const routesHeader = document.getElementById('routes-header');
     if (routesHeader) {
         routesHeader.addEventListener('click', function() {
+            console.log('Routes header clicked');
             // Small delay to ensure the dropdown content is visible
             setTimeout(() => {
-                if (document.getElementById('map') && !map) {
+                const mapElement = document.getElementById('map');
+                console.log('Map element found:', !!mapElement);
+                console.log('Map variable:', map);
+                if (mapElement && !map) {
+                    console.log('Initializing map...');
                     initMap();
+                } else {
+                    console.log('Map not initialized - element:', !!mapElement, 'map var:', map);
                 }
             }, 100);
         });
@@ -1612,100 +1692,100 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 }
 
 
-// --- AI Agent wiring (drop-in) ---
-(function TEST22() {
-    const API_BASE_URL = 'http://127.0.0.1:8000/api'; // keep your current value
+// // --- AI Agent wiring (drop-in) ---
+// (function TEST22() {
+//     const API_BASE_URL = 'http://127.0.0.1:8000/api'; // keep your current value
   
-    const aiButton = document.querySelector('.ai-button');
-    const aiInput  = document.querySelector('.ai-input');
-    const aiOut    = document.getElementById('ai-output');
-    const nextBtn  = document.getElementById('next-courses-btn');
-    const reqBtn   = document.getElementById('course-requirements-btn');
+//     const aiButton = document.querySelector('.ai-button');
+//     const aiInput  = document.querySelector('.ai-input');
+//     const aiOut    = document.getElementById('ai-output');
+//     const nextBtn  = document.getElementById('next-courses-btn');
+//     const reqBtn   = document.getElementById('course-requirements-btn');
   
-    if (!aiButton || !aiInput || !aiOut) return;
+//     if (!aiButton || !aiInput || !aiOut) return;
   
-    // ensure black text for output (in case of dark theme)
-    aiOut.style.color = '#000';
+//     // ensure black text for output (in case of dark theme)
+//     aiOut.style.color = '#000';
   
-    // simple local storage session so multi-turn works
-    const getSessionId = () => {
-      try { return localStorage.getItem('adkSessionId') || null; } catch { return null; }
-    };
-    const setSessionId = (sid) => {
-      try { if (sid) localStorage.setItem('adkSessionId', sid); } catch {}
-    };
+//     // simple local storage session so multi-turn works
+//     const getSessionId = () => {
+//       try { return localStorage.getItem('adkSessionId') || null; } catch { return null; }
+//     };
+//     const setSessionId = (sid) => {
+//       try { if (sid) localStorage.setItem('adkSessionId', sid); } catch {}
+//     };
   
-    async function sendToAgent(query) {
-      aiOut.textContent = 'Thinking…';
-      aiButton.disabled = true;
+//     async function sendToAgent(query) {
+//       aiOut.textContent = 'Thinking…';
+//       aiButton.disabled = true;
   
-      try {
-        const body = { query };
-        const sid = getSessionId();
-        if (sid) body.session_id = sid; // reuse the same ADK session
+//       try {
+//         const body = { query };
+//         const sid = getSessionId();
+//         if (sid) body.session_id = sid; // reuse the same ADK session
   
-        const res = await fetch(`${API_BASE_URL}/agent/ask`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
+//         const res = await fetch(`${API_BASE_URL}/agent/ask`, {
+//           method: 'POST',
+//           headers: { 'Content-Type': 'application/json' },
+//           body: JSON.stringify(body)
+//         });
   
-        const data = await res.json();
+//         const data = await res.json();
   
-        if (!res.ok) {
-          aiOut.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
-          return;
-        }
+//         if (!res.ok) {
+//           aiOut.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+//           return;
+//         }
   
-        // persist session id returned by backend
-        if (data.session_id) setSessionId(data.session_id);
+//         // persist session id returned by backend
+//         if (data.session_id) setSessionId(data.session_id);
   
-        const answer = data.response ?? data.answer ?? data.output ?? data.result ?? data.text ?? data;
-        aiOut.textContent = typeof answer === 'string' ? answer : JSON.stringify(answer, null, 2);
+//         const answer = data.response ?? data.answer ?? data.output ?? data.result ?? data.text ?? data;
+//         aiOut.textContent = typeof answer === 'string' ? answer : JSON.stringify(answer, null, 2);
 
-      } catch (e) {
-        console.error(e);
-        aiOut.textContent = 'Request failed.';
-      } finally {
-        aiButton.disabled = false;
-      }
-    }
+//       } catch (e) {
+//         console.error(e);
+//         aiOut.textContent = 'Request failed.';
+//       } finally {
+//         aiButton.disabled = false;
+//       }
+//     }
   
-    // Wire the main Ask button
-    aiButton.addEventListener('click', async () => {
-      const q = (aiInput.value || '').trim();
-      if (!q) return;
-      await sendToAgent(q);
-      aiInput.value = '';
-    });
+//     // Wire the main Ask button
+//     aiButton.addEventListener('click', async () => {
+//       const q = (aiInput.value || '').trim();
+//       if (!q) return;
+//       await sendToAgent(q);
+//       aiInput.value = '';
+//     });
   
-    // Enter submits (Shift+Enter = newline)
-    aiInput.addEventListener('keydown', async (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        const q = (aiInput.value || '').trim();
-        if (!q) return;
-        await sendToAgent(q);
-        aiInput.value = '';
-      }
-    });
+//     // Enter submits (Shift+Enter = newline)
+//     aiInput.addEventListener('keydown', async (e) => {
+//       if (e.key === 'Enter' && !e.shiftKey) {
+//         e.preventDefault();
+//         const q = (aiInput.value || '').trim();
+//         if (!q) return;
+//         await sendToAgent(q);
+//         aiInput.value = '';
+//       }
+//     });
   
-    // Prompt template buttons just fill the input (and optionally auto-send)
-    if (nextBtn) {
-      nextBtn.addEventListener('click', async () => {
-        aiInput.value = 'What should I take next?';
-        // If you want it to auto-send, uncomment:
-        // aiButton.click();
-      });
-    }
+//     // Prompt template buttons just fill the input (and optionally auto-send)
+//     if (nextBtn) {
+//       nextBtn.addEventListener('click', async () => {
+//         aiInput.value = 'What should I take next?';
+//         // If you want it to auto-send, uncomment:
+//         // aiButton.click();
+//       });
+//     }
   
-    if (reqBtn) {
-      reqBtn.addEventListener('click', () => {
-        aiInput.value = 'Course requirements';
-        // aiButton.click();
-      });
-    }
-  })();
+//     if (reqBtn) {
+//       reqBtn.addEventListener('click', () => {
+//         aiInput.value = 'Course requirements';
+//         // aiButton.click();
+//       });
+//     }
+//   })();
 
 
 
@@ -1844,7 +1924,7 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       // Step 0: initial state
       aiOut.textContent = 'Thinking…';
   
-      // Fake step-by-step “tool usage”
+      // step-by-step “tool usage”
       const steps = [
         'Using tool: load_major_template → loaded CS core requirements.',
         'Using tool: diff_requirements → computed eligible courses.',

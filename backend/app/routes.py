@@ -81,7 +81,18 @@ async def read_major(major_id: str):
 
 # ----------------- Users -----------------
 @router.post("/users")
-async def create_user(user: User):
+async def create_user(user_data: dict):
+    # Convert dict to User model with proper Schedule
+    from app.models import Schedule
+    
+    # Ensure schedule is a proper Schedule object
+    if isinstance(user_data.get('schedule'), dict):
+        user_data['schedule'] = Schedule(**user_data['schedule'])
+    elif not user_data.get('schedule'):
+        user_data['schedule'] = Schedule()
+    
+    user = User(**user_data)
+    
     existing = await get_user(user.user_id)
     if existing:
         raise HTTPException(status_code=400, detail="User with this id already exists")
@@ -97,8 +108,34 @@ async def read_user(user_id: str):
 
 @router.put("/users/{user_id}")
 async def edit_user(user_id: str, update_data: dict):
-    await update_user(user_id, update_data)
-    return {"status": "updated"}
+    try:
+        print(f"Updating user {user_id} with data: {update_data}")
+        
+        # Handle schedule conversion if present
+        if 'schedule' in update_data and isinstance(update_data['schedule'], dict):
+            from app.models import Schedule
+            update_data['schedule'] = Schedule(**update_data['schedule'])
+        
+        # Convert Pydantic models to dicts before passing to update_user
+        def convert_to_dict(obj):
+            if hasattr(obj, 'dict'):
+                return obj.dict()
+            elif isinstance(obj, list):
+                return [convert_to_dict(item) for item in obj]
+            elif isinstance(obj, dict):
+                return {k: convert_to_dict(v) for k, v in obj.items()}
+            else:
+                return obj
+        
+        update_data = convert_to_dict(update_data)
+        await update_user(user_id, update_data)
+        print(f"Successfully updated user {user_id}")
+        return {"status": "updated"}
+    except Exception as e:
+        print(f"Error updating user {user_id}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 #----------------- Route Stuff -----------------

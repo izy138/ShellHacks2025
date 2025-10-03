@@ -45,4 +45,19 @@ async def get_user(user_id: str):
 
 async def update_user(user_id: str, update_data: dict):
     update_data.pop('_id', None)  # Remove _id if present
+    
+    # Convert any Pydantic models back to dicts for MongoDB
+    def serialize_for_mongo(obj):
+        if hasattr(obj, 'dict'):  # Pydantic model
+            return obj.dict()
+        elif hasattr(obj, 'isoformat'):  # datetime objects
+            return obj.isoformat()
+        elif isinstance(obj, list):
+            return [serialize_for_mongo(item) for item in obj]
+        elif isinstance(obj, dict):
+            return {k: serialize_for_mongo(v) for k, v in obj.items()}
+        else:
+            return obj
+    
+    update_data = serialize_for_mongo(update_data)
     await db.users.update_one({"user_id": user_id}, {"$set": update_data})

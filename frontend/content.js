@@ -232,7 +232,7 @@
             console.log('Test API response:', testResponse.status, testResponse.ok);
             if (testResponse.ok) {
                 const testData = await testResponse.json();
-                console.log('Test API data:', testData);
+                // console.log('Test API data:', testData);
             }
 
             // ...existing code to load courses from backend (removed hardcoded sample course list)...

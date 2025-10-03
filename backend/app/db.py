@@ -12,7 +12,9 @@ client = motor.motor_asyncio.AsyncIOMotorClient(
     MONGO_URL,
     tls=True,
     tlsAllowInvalidCertificates=True,  # For development only
-    serverSelectionTimeoutMS=5000
+    serverSelectionTimeoutMS=10000,  # Increase timeout
+    connectTimeoutMS=10000,
+    socketTimeoutMS=10000
 )
 db = client[DB_NAME]
 

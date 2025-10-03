@@ -15,8 +15,8 @@ class Course(BaseModel):
 class Location(BaseModel):
     code: str
     full_name: str
-    address: str
-    google_maps_place_id: str
+    address: Optional[str] = None
+    google_maps_place_id: Optional[str] = None
 
 # ----------------- Schedule -----------------
 class Block(BaseModel):

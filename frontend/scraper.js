@@ -95,4 +95,3 @@ function formatScrapedRows(infoArray) {
     return formatArray
 
 } 
-
