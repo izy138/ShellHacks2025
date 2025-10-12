@@ -4,9 +4,9 @@ https://devpost.com/software/fiu-panther-planner
 ```python -m uvicorn app.main:app --reload```
 
 ### Start Extension:
-Go to chrome://extensions.
+Go to chrome://extensions
 
-Turn on Developer mode of the top right.
+Turn on Developer mode on the top right.
 
 Click 'Load Unpacked' at the top left, and select the frontend folder of the project.
 
